@@ -6,7 +6,7 @@ $VERSION = eval $VERSION;
 
 =head1 NAME
 
-Data::Event::Processor - Perl extension ...
+Data::Event::Processor - Perl extension for processing event stream
 
 =head1 VERSION
 
