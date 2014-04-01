@@ -1,28 +1,8 @@
 package Data::Event::Processor::LengthWindow;
 use Moose;
+with 'Data::Event::Processor::Window';
 
 has size => ( is => 'ro', required => 1 );
-
-has processors => (
-    is      => 'ro',
-    traits  => ['Array'],
-    default => sub { [] },
-    handles => {
-        all_processors => 'elements',
-        add_processor  => 'push',
-    },
-);
-
-has events => (
-    is      => 'ro',
-    default => sub { [] },
-    traits  => ['Array'],
-    handles => {
-        push_event   => 'push',
-        shift_event  => 'shift',
-        count_events => 'count',
-    }
-);
 
 sub enqueue {
     my ( $self, $event ) = @_;
@@ -37,5 +17,9 @@ sub enqueue {
         }
     }
 }
+
+no Moose;
+
+__PACKAGE__->meta->make_immutable;
 
 1;
