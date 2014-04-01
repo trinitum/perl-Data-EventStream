@@ -1,4 +1,4 @@
-package Data::Event::Processor::SlidingWindow;
+package Data::Event::Processor::LengthWindow;
 use Moose;
 
 has size => ( is => 'ro', required => 1 );
