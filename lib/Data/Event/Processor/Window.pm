@@ -16,9 +16,11 @@ has events => (
     traits  => ['Array'],
     default => sub { [] },
     handles => {
+        all_events   => 'elements',
         push_event   => 'push',
         shift_event  => 'shift',
         count_events => 'count',
+        clear_events => 'clear',
     },
 );
 
