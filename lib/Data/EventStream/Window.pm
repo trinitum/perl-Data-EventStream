@@ -1,4 +1,4 @@
-package Data::Event::Processor::Window;
+package Data::EventStream::Window;
 use Moose::Role;
 
 has processors => (

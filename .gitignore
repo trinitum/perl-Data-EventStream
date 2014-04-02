@@ -13,4 +13,4 @@ pod2htm*.tmp
 *.bak
 MYMETA.*
 nytprof*
-Data-Event-Processor-*
+Data-EventStream-*

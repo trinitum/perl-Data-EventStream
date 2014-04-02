@@ -1,5 +1,5 @@
 Changes
-lib/Data/Event/Processor.pm
+lib/Data/EventStream.pm
 Makefile.PL
 MANIFEST			This list of files
 README

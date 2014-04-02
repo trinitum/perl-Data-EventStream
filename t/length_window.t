@@ -1,7 +1,7 @@
 use Test::Most;
 use Test::FailWarnings;
 
-use Data::Event::Processor::LengthWindow;
+use Data::EventStream::LengthWindow;
 
 {
 
@@ -24,7 +24,7 @@ use Data::Event::Processor::LengthWindow;
 my $sum = Summator->new;
 my $cnt = Counter->new;
 
-my $sw = Data::Event::Processor::LengthWindow->new(
+my $sw = Data::EventStream::LengthWindow->new(
     size       => 3,
     processors => [$sum],
 );

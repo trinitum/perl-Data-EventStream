@@ -1,6 +1,6 @@
-package Data::Event::Processor::LengthBatchWindow;
+package Data::EventStream::LengthBatchWindow;
 use Moose;
-with 'Data::Event::Processor::Window';
+with 'Data::EventStream::Window';
 
 has size => ( is => 'ro', required => 1 );
 

@@ -1,4 +1,4 @@
-package Data::Event::Processor;
+package Data::EventStream;
 use strict;
 use warnings;
 our $VERSION = "0.01";
@@ -6,7 +6,7 @@ $VERSION = eval $VERSION;
 
 =head1 NAME
 
-Data::Event::Processor - Perl extension for processing event stream
+Data::EventStream - Perl extension for processing event stream
 
 =head1 VERSION
 
@@ -14,7 +14,7 @@ Data::Event::Processor - Perl extension for processing event stream
 
 =head1 SYNOPSIS
 
-    use Data::Event::Processor;
+    use Data::EventStream;
 
 =head1 DESCRIPTION
 
@@ -29,7 +29,7 @@ __END__
 =head1 BUGS
 
 Please report any bugs or feature requests via GitHub bug tracker at
-L<http://github.com/trinitum/perl-Data-Event-Processor/issues>.
+L<http://github.com/trinitum/perl-Data-EventStream/issues>.
 
 =head1 AUTHOR
 

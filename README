@@ -1,5 +1,5 @@
 NAME
-    Data::Event::Processor
+    Data::EventStream
 
 INSTALLATION
     To install this module, run the following commands:
