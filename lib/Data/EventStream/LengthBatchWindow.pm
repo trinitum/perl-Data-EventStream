@@ -1,5 +1,7 @@
 package Data::EventStream::LengthBatchWindow;
 use Moose;
+our $VERSION = "0.01";
+$VERSION = eval $VERSION;
 with 'Data::EventStream::Window';
 
 has size => ( is => 'ro', required => 1 );

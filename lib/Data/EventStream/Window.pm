@@ -1,5 +1,7 @@
 package Data::EventStream::Window;
 use Moose::Role;
+our $VERSION = "0.01";
+$VERSION = eval $VERSION;
 
 has processors => (
     is      => 'ro',

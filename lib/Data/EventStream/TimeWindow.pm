@@ -1,5 +1,7 @@
 package Data::EventStream::TimeWindow;
 use Moose;
+our $VERSION = "0.01";
+$VERSION = eval $VERSION;
 with 'Data::EventStream::Window';
 use Data::EventStream::Clock;
 

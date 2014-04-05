@@ -18,6 +18,11 @@ Data::EventStream - Perl extension for processing event stream
 
 =head1 DESCRIPTION
 
+B<WARNING:> this distribution is in the phase of active development, all
+interfaces are likely to change and documentation is non-existent.
+
+Collection of modules for processing streams of events.
+
 =head1 METHODS
 
 =cut
