@@ -23,7 +23,6 @@ sub dequeue_old_events {
     my $events      = $self->events;
     my $low_barrier = $self->clock->get_time - $self->size;
     my @evictees;
-    $DB::single = 1 if $self->clock->get_time > 350;
     while ( @$events && $events->[0]->time <= $low_barrier ) {
         push @evictees, shift @$events;
     }
