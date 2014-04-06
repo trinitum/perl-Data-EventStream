@@ -1,2 +1,5 @@
+0.02 Mon Apr  7 2014 Pavel Shaydo <zwon@cpan.org>
+    - fix dependencies
+
 0.01 Sun Apr  6 2014 Pavel Shaydo <zwon@cpan.org>
-    * First version, released on an unsuspecting world.
+    - First version, released on an unsuspecting world.

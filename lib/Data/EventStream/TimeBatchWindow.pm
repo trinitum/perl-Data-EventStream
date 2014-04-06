@@ -1,6 +1,6 @@
 package Data::EventStream::TimeBatchWindow;
 use Moose;
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 $VERSION = eval $VERSION;
 with 'Data::EventStream::Window';
 use Data::EventStream::Clock;

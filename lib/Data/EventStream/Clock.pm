@@ -1,6 +1,6 @@
 package Data::EventStream::Clock;
 use Moose::Role;
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 $VERSION = eval $VERSION;
 
 requires 'get_time';
