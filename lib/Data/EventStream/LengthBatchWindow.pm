@@ -10,10 +10,8 @@ sub enqueue {
     my ( $self, $event ) = @_;
     $self->push_event($event);
     if ( $self->count_events == $self->size ) {
-        for my $proc ( $self->all_processors ) {
-            $proc->accumulate( $self->all_events );
-            $proc->reset;
-        }
+        $_->accumulate($self->all_events) for $self->all_processors;
+        $_->reset for $self->all_processors;
         $self->clear_events;
     }
 }
