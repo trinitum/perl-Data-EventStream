@@ -8,9 +8,10 @@ has size => ( is => 'ro', required => 1 );
 
 sub enqueue {
     my ( $self, $event ) = @_;
+    $_->accumulate($event) for $self->all_processors;
     $self->push_event($event);
     if ( $self->count_events == $self->size ) {
-        $_->accumulate($self->all_events) for $self->all_processors;
+        $_->compensate( $self->all_events ) for $self->all_processors;
         $_->reset for $self->all_processors;
         $self->clear_events;
     }

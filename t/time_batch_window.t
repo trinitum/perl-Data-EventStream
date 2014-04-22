@@ -9,6 +9,7 @@ use Data::EventStream::TimedEvent;
     package Summator;
     sub new { return bless { count => 0, last => 0, }, shift }
     sub accumulate { my $self = shift; $self->{count} += $_->data for @_; }
+    sub compensate { 1 }
     sub reset { my $self = shift; ( $self->{last}, $self->{count} ) = ( $self->{count}, 0 ); }
     sub last { shift->{last} }
 }
@@ -17,9 +18,10 @@ use Data::EventStream::TimedEvent;
 
     package Counter;
     sub new { return bless { count => 0, last => 0, }, shift }
-    sub accumulate { my $self = shift; $self->{count} = @_; }
+    sub accumulate { my $self = shift; $self->{count} += @_; }
     sub reset { my $self = shift; ( $self->{last}, $self->{count} ) = ( $self->{count}, 0 ); }
-    sub last { shift->{last} }
+    sub compensate { 1 }
+    sub last       { shift->{last} }
 }
 
 my $sum   = Summator->new;

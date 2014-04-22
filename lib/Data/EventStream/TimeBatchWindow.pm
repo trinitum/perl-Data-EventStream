@@ -13,6 +13,7 @@ has clock => ( is => 'ro', default => sub { Data::EventStream::MonotonicClock->n
 
 sub enqueue {
     my ( $self, $event ) = @_;
+    $_->accumulate($event) for $self->all_processors;
     $self->push_event($event);
     $self->dequeue_old_events();
 }
@@ -37,7 +38,7 @@ sub dequeue_old_events {
         while ( @$events && $events->[0]->time < $batch_end_time ) {
             push @evictees, shift @$events;
         }
-        $_->accumulate(@evictees) for $self->all_processors;
+        $_->compensate(@evictees) for $self->all_processors;
         $_->reset for $self->all_processors;
         $self->_set_batch_start_time($batch_end_time);
     }

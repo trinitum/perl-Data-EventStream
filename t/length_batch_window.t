@@ -9,6 +9,7 @@ my @sums;
     package Summator;
     sub new { return bless { count => 0 }, shift }
     sub accumulate { my $self = shift; $self->{count} += $_ for @_; }
+    sub compensate { 1 }
     sub reset { push @sums, $_[0]{count}; $_[0]{count} = 0; }
 }
 
@@ -18,6 +19,7 @@ my @cnts;
     package Counter;
     sub new { return bless { count => 0 }, shift }
     sub accumulate { my $self = shift; $self->{count} = @_; }
+    sub compensate { 1 }
     sub reset { push @cnts, $_[0]{count}; $_[0]{count} = 0; }
 }
 
