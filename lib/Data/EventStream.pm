@@ -85,6 +85,11 @@ sub add_event {
             $state->{_obj}->in($event);
             $state->{_in}++;
             $state->{on_in}->( $state->{_obj} ) if $state->{on_in};
+            if ( $state->{batch} and $state->{_in} == $state->{length} ) {
+                $state->{on_reset}->( $state->{_obj} ) if $state->{on_reset};
+                $state->{_obj}->reset;
+                $state->{_in} = 0;
+            }
         }
     }
 
