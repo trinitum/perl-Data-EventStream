@@ -67,18 +67,21 @@ my $es = Data::EventStream->new();
 my %params = (
     'c3' => { type => 'count', length => 3 },
     'c5' => { type => 'count', length => 5 },
+    'b4' => { type => 'count', length => 4, batch => 1 },
 );
 
 my %average;
 my %ins;
 my %outs;
+my %resets;
 
 for my $as ( keys %params ) {
     $average{$as} = Averager->new;
     $es->add_state(
         $average{$as}, %{ $params{$as} },
-        on_in  => sub { $ins{$as}  //= []; push @{ $ins{$as} },  $_[0]->value; },
-        on_out => sub { $outs{$as} //= []; push @{ $outs{$as} }, $_[0]->value; },
+        on_in    => sub { $ins{$as}    //= []; push @{ $ins{$as} },    $_[0]->value; },
+        on_out   => sub { $outs{$as}   //= []; push @{ $outs{$as} },   $_[0]->value; },
+        on_reset => sub { $resets{$as} //= []; push @{ $resets{$as} }, $_[0]->value; },
     );
 }
 
@@ -96,22 +99,26 @@ my @events = (
 );
 
 my %exp_ins = (
-    c3 => [ 2, 3, 3, 4,   3, 4,   5,   6,   4,   3, ],
-    c5 => [ 2, 3, 3, 3.5, 3, 3.8, 4.6, 4.8, 3.8, 4.6, ],
+    c3 => [ 2, 3, 3, 4,   3, 4,   5,   6,    4,   3, ],
+    c5 => [ 2, 3, 3, 3.5, 3, 3.8, 4.6, 4.8,  3.8, 4.6, ],
+    b4 => [ 2, 3, 3, 3.5, 1, 3.5, 5,   4.75, 0,   2.5, ],
 );
 
 my %exp_outs = (
-    c3 => [ 3, 4,   3, 4,   5,   6,   4, ],
+    c3 => [ 3, 4,   3,   4,   5, 6, 4, ],
     c5 => [ 3, 3.8, 4.6, 4.8, 3.8, ],
 );
+
+my %exp_resets = ( b4 => [ 3.5, 4.75, ], );
 
 for my $ev (@events) {
     $es->add_event($ev);
 }
 
 for my $as ( keys %params ) {
-    eq_or_diff $ins{$as},  $exp_ins{$as},  "got expected ins for $as";
-    eq_or_diff $outs{$as}, $exp_outs{$as}, "got expected outs for $as";
+    eq_or_diff $ins{$as},    $exp_ins{$as},    "got expected ins for $as";
+    eq_or_diff $outs{$as},   $exp_outs{$as},   "got expected outs for $as" if $exp_outs{$as};
+    eq_or_diff $resets{$as}, $exp_resets{$as}, "got expected resets for $as" if $exp_resets{$as};
 }
 
 done_testing;
