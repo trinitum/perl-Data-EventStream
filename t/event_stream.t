@@ -11,7 +11,7 @@ use Data::EventStream;
     has value_sub => (
         is      => 'rw',
         default => sub {
-            sub { $_->{val} }
+            sub { shift->{val} }
         },
     );
 
@@ -36,7 +36,10 @@ use Data::EventStream;
         },
     );
 
-    sub value { my $self = shift; return $self->_count ? $self->_sum / $self->_count : 'NaN'; }
+    sub value {
+        my $self = shift;
+        return $self->_count ? $self->_sum / $self->_count : 'NaN';
+    }
 
     sub in {
         my ( $self, $event ) = @_;
@@ -98,8 +101,8 @@ my %exp_ins = (
 );
 
 my %exp_outs = (
-    c3 => [ 3, 4,   4, 4,   5,   6,   4,   3, ],
-    c5 => [ 3, 3.5, 3, 3.8, 4.6, 4.8, 3.8, 4.6, ],
+    c3 => [ 3, 4,   3, 4,   5,   6,   4, ],
+    c5 => [ 3, 3.8, 4.6, 4.8, 3.8, ],
 );
 
 for my $ev (@events) {
