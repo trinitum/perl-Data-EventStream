@@ -55,8 +55,9 @@ sub add_state {
     $params{_obj} = $state;
     if ( $params{type} eq 'count' ) {
         $params{_in} = 0;
-        if ( $params{length} > $self->length ) {
-            $self->_set_length( $params{length} );
+        $params{shift} //= 0;
+        if ( $params{shift} + $params{length} > $self->length ) {
+            $self->_set_length( $params{shift} + $params{length} );
         }
     }
     $self->push_state( \%params );
@@ -72,7 +73,7 @@ sub add_event {
         if ( $state->{type} eq 'count' ) {
             if ( $state->{_in} == $state->{length} ) {
                 $state->{on_out}->( $state->{_obj} ) if $state->{on_out};
-                $state->{_obj}->out( $ev->[ -$state->{_in} ] );
+                $state->{_obj}->out( $ev->[ -$state->{_in} - $state->{shift} ] );
                 $state->{_in}--;
             }
         }
@@ -82,7 +83,13 @@ sub add_event {
 
     for my $state (@$as) {
         if ( $state->{type} eq 'count' ) {
-            $state->{_obj}->in($event);
+            if ( $state->{shift} ) {
+                next if $ev_num < $state->{shift};
+                $state->{_obj}->in( $ev->[ -$state->{shift} - 1 ] );
+            }
+            else {
+                $state->{_obj}->in($event);
+            }
             $state->{_in}++;
             $state->{on_in}->( $state->{_obj} ) if $state->{on_in};
             if ( $state->{batch} and $state->{_in} == $state->{length} ) {
