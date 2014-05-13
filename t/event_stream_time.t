@@ -37,7 +37,7 @@ use Data::EventStream;
     sub value {
         my $self = shift;
         return
-            $self->_duration    ? $self->_sum / $self->_duration
+            $self->_duration ? sprintf( "%.5g", $self->_sum / $self->_duration )
           : $self->_start_event ? $self->_start_event->[1]
           :                       'NaN';
     }
@@ -82,6 +82,8 @@ use Data::EventStream;
 my $es = Data::EventStream->new();
 
 my %params = (
+    t3 => { type => 'time', period => '3', },
+    t5 => { type => 'time', period => '5', },
 );
 
 my %average;
@@ -100,18 +102,120 @@ for my $as ( keys %params ) {
 }
 
 my @events = (
+    {
+        time => 11.3,
+        val  => 1,
+        ins  => { t3 => 11.3, t5 => 11.3, },
+    },
+    {
+        time => 12,
+        vals => { t3 => 1, t5 => 1, },
+    },
+    {
+        time => 12.7,
+        val  => 3,
+        ins  => { t3 => 1, t5 => 1, },
+    },
+    {
+        time => 13,
+        vals => { t3 => 1.35294, t5 => 1.35294, },
+    },
+    {
+        time => 13.2,
+        val  => 4,
+        ins  => { t3 => 1.52631, t5 => 1.52631, },
+    },
+    {
+        time => 15,
+        vals => { t3 => 3.13333, t5 => 2.72973, },
+        outs => { t3 => 3.13333, },
+    },
+    {
+        time => 16,
+        vals => { t3 => 3.93333, t5 => 3, },
+        outs => { t3 => 3.93333, },
+    },
+    {
+        time => 17.1,
+        val  => 8,
+        ins  => { t3 => 4, t5 => 3.54, },
+        outs => { t3 => 4, t5 => 3.54, },
+    },
+    {
+        time => 19.2,
+        val  => 5,
+        ins  => { t3 => 6.8, t5 => 5.68, },
+        outs => { t5 => 5.68, },
+    },
+    {
+        time => 20,
+        vals => { t3 => 7.06667, t5 => 5.84, },
+    },
+    {
+        time => 20.8,
+        val  => 2,
+        ins  => { t3 => 6.4, t5 => 6, },
+        outs => { t3 => 6.4, },
+    },
+    {
+        time => 23,
+        vals => { t3 => 2.8, t5 => 4.4, },
+        outs => { t3 => 2.8, t5 => 4.4, },
+    },
+    {
+        time => 30,
+        val  => 4,
+        ins  => { t3 => 2, t5 => 2, },
+        outs => { t3 => 2, t5 => 2, },
+    },
+    {
+        time => 33,
+        val  => 1,
+        ins  => { t3 => 4, t5 => 3.2, },
+        outs => { t3 => 4, },
+    },
+    {
+        time => 33.5,
+        val  => 7,
+        ins  => { t3 => 3.5, t5 => 3.1, },
+    },
+    {
+        time => 35.2,
+        val  => 9,
+        ins  => { t3 => 5.2, t5 => 4.72, },
+        outs => { t5 => 4.72, },
+    },
+    {
+        time => 36,
+        vals => { t3 => 6.53333, t5 => 5.52, },
+        outs => { t3 => 6.53333, },
+    },
+    {
+        time => 45,
+        vals => { t3 => 9, t5 => 9, },
+        outs => { t3 => 9, t5 => 9, },
+    },
 );
 
 my $i = 1;
 for my $ev (@events) {
-    subtest "event $i: time=$ev->{time} val=$ev->{val}" => sub {
-        $es->add_event( { val => $ev->{val} } );
+    subtest "event $i: time=$ev->{time}" . ( $ev->{val} ? " val=$ev->{val}" : "" ) => sub {
+        $es->clock->update_time( $ev->{time} );
+        $es->add_event( { time => $ev->{time}, val => $ev->{val} } ) if $ev->{val};
         eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
         %ins = ();
         eq_or_diff \%outs, $ev->{outs} // {}, "got expected outs";
         %outs = ();
         eq_or_diff \%resets, $ev->{resets} // {}, "got expected resets";
         %resets = ();
+
+        if ( $ev->{vals} ) {
+            my %vals;
+            for ( keys %{ $ev->{vals} } ) {
+                $vals{$_} = $average{$_}->value;
+            }
+            eq_or_diff \%vals, $ev->{vals}, "states have expected values";
+        }
     };
     $i++;
 }
