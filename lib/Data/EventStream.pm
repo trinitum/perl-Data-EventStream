@@ -2,6 +2,8 @@ package Data::EventStream;
 use Moose;
 our $VERSION = "0.02";
 $VERSION = eval $VERSION;
+use Carp;
+use Data::EventStream::Window;
 
 =head1 NAME
 
@@ -48,17 +50,37 @@ has aggregate_states => (
     },
 );
 
+has clock => ( is => 'ro', handles => [ 'set_time', 'get_time' ], );
+
+has time_length => ( is => 'ro', default => 0, writer => '_set_time_length' );
+
+has time_sub => ( is => 'ro', );
+
 has length => ( is => 'ro', default => 0, writer => '_set_length' );
 
 sub add_state {
     my ( $self, $state, %params ) = @_;
     $params{_obj} = $state;
     if ( $params{type} eq 'count' ) {
-        $params{_in} = 0;
         $params{shift} //= 0;
+        $params{_window} = Data::EventStream::Window->new(
+            shift  => $params{shift},
+            events => $self->events,
+        );
         if ( $params{shift} + $params{length} > $self->length ) {
             $self->_set_length( $params{shift} + $params{length} );
         }
+    }
+    elsif ( $params{type} eq 'time' ) {
+        croak "clock and time_sub must be defined for using time states"
+          unless $self->clock and $self->time_sub;
+        $params{_start_time} = $self->get_time;
+        if ( $params{period} > $self->time_length ) {
+            $self->_set_length( $params{length} );
+        }
+    }
+    else {
+        croak "Unknown state type $params{type}";
     }
     $self->push_state( \%params );
 }
@@ -68,13 +90,17 @@ sub add_event {
     my $ev     = $self->events;
     my $ev_num = $self->count_events;
     my $as     = $self->aggregate_states;
+    my $time;
+    if ( my $gt = $self->time_sub ) {
+        $time = $gt->($event);
+    }
 
     for my $state (@$as) {
         if ( $state->{type} eq 'count' ) {
-            if ( $state->{_in} == $state->{length} ) {
+            if ( $state->{_window}->count == $state->{length} ) {
                 $state->{on_out}->( $state->{_obj} ) if $state->{on_out};
-                $state->{_obj}->out( $ev->[ -$state->{_in} - $state->{shift} ] );
-                $state->{_in}--;
+                my $ev_out = $state->{_window}->shift_event;
+                $state->{_obj}->out( $ev_out, $state->{_window} );
             }
         }
     }
@@ -83,19 +109,14 @@ sub add_event {
 
     for my $state (@$as) {
         if ( $state->{type} eq 'count' ) {
-            if ( $state->{shift} ) {
-                next if $ev_num < $state->{shift};
-                $state->{_obj}->in( $ev->[ -$state->{shift} - 1 ] );
-            }
-            else {
-                $state->{_obj}->in($event);
-            }
-            $state->{_in}++;
+            next if $ev_num < $state->{shift};
+            my $ev_in = $state->{_window}->push_event;
+            $state->{_obj}->in( $ev_in, $state->{_window} );
             $state->{on_in}->( $state->{_obj} ) if $state->{on_in};
-            if ( $state->{batch} and $state->{_in} == $state->{length} ) {
+            if ( $state->{batch} and $state->{_window}->count == $state->{length} ) {
                 $state->{on_reset}->( $state->{_obj} ) if $state->{on_reset};
-                $state->{_obj}->reset;
-                $state->{_in} = 0;
+                $state->{_window}->reset_count;
+                $state->{_obj}->reset( $state->{_window} );
             }
         }
     }
