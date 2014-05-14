@@ -7,7 +7,13 @@ use Data::EventStream::Clock;
 
 has size => ( is => 'ro', required => 1 );
 
-has clock => ( is => 'ro', default => sub { Data::EventStream::MonotonicClock->new; } );
+has clock => (
+    is      => 'ro',
+    default => sub {
+        require Data::EventStream::ClockMonotonic;
+        Data::EventStream::ClockMonotonic->new;
+    }
+);
 
 sub enqueue {
     my ( $self, $event ) = @_;

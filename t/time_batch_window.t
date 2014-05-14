@@ -3,6 +3,7 @@ use Test::FailWarnings;
 
 use Data::EventStream::TimeBatchWindow;
 use Data::EventStream::TimedEvent;
+use Data::EventStream::ClockMonotonic;
 
 {
 
@@ -26,7 +27,7 @@ use Data::EventStream::TimedEvent;
 
 my $sum   = Summator->new;
 my $cnt   = Counter->new;
-my $clock = Data::EventStream::MonotonicClock->new( time => 100 );
+my $clock = Data::EventStream::ClockMonotonic->new( time => 100 );
 
 my $sw = Data::EventStream::TimeBatchWindow->new(
     size       => 100,

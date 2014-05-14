@@ -1,28 +1,27 @@
-package Data::EventStream::Clock;
-use Moose::Role;
-our $VERSION = "0.02";
-$VERSION = eval $VERSION;
-
-requires 'get_time';
-requires 'set_time';
-requires 'set_alarm';
-requires 'check_alarm';
-requires 'clear_alarm';
-
-package Data::EventStream::RealtimeClock;
+package Data::EventStream::ClockMonotonic;
 use Moose;
 with 'Data::EventStream::Clock';
-use Time::HiRes qw();
+use Carp;
+
+has time => (
+    is      => 'ro',
+    writer  => '_set_time',
+    default => sub { time },
+);
 
 has _alarm_time => ( is => 'rw' );
-has _alarm_cb   => ( is => 'rw' );
+
+has _alarm_cb => ( is => 'rw' );
 
 sub get_time {
-    Time::HiRes::time();
+    shift->time;
 }
 
 sub set_time {
-    shift->get_time;
+    my ( $self, $time ) = @_;
+    croak "New time must not be before current time" if $time < $self->time;
+    $self->_set_time($time);
+    $self->check_alarm;
 }
 
 sub set_alarm {
@@ -34,7 +33,7 @@ sub set_alarm {
 
 sub check_alarm {
     my $self = shift;
-    if ( $self->_alarm_time and $self->_alarm_time < $self->get_time ) {
+    if ( $self->_alarm_time and $self->_alarm_time <= $self->get_time ) {
         my $cb = $self->_alarm_cb;
         $self->clear_alarm;
         $cb->( $self->get_time );

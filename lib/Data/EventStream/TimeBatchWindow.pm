@@ -9,7 +9,13 @@ has batch_start_time => ( is => 'ro', writer => '_set_batch_start_time', default
 
 has size => ( is => 'ro', required => 1 );
 
-has clock => ( is => 'ro', default => sub { Data::EventStream::MonotonicClock->new; } );
+has clock => (
+    is      => 'ro',
+    default => sub {
+        require Data::EventStream::ClockMonotonic;
+        Data::EventStream::ClockMonotonic->new;
+    },
+);
 
 sub enqueue {
     my ( $self, $event ) = @_;
