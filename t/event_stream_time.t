@@ -73,13 +73,16 @@ use Data::EventStream;
         my ( $time, $value ) = $self->time_value_sub->($event);
         my $start_ev = $self->_start_event;
         $self->_sub_num( ( $time - $start_ev->[0] ) * $start_ev->[1] );
-        $start_time = $window->start_time;
+        my $start_time = $window->start_time;
         $self->_sub_num( ( $start_time - $time ) * $value );
         $self->_start_event( [ $start_time, $value ] );
     }
 }
 
-my $es = Data::EventStream->new();
+my $es = Data::EventStream->new(
+    clock => Data::EventStream::ClockMonotonic->new(time => 1),
+    get_time => sub { $_[0]->{time} },
+);
 
 my %params = (
     t3 => { type => 'time', period => '3', },
@@ -200,7 +203,7 @@ my @events = (
 my $i = 1;
 for my $ev (@events) {
     subtest "event $i: time=$ev->{time}" . ( $ev->{val} ? " val=$ev->{val}" : "" ) => sub {
-        $es->clock->update_time( $ev->{time} );
+        $es->set_time( $ev->{time} );
         $es->add_event( { time => $ev->{time}, val => $ev->{val} } ) if $ev->{val};
         eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
         %ins = ();

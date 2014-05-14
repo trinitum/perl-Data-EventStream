@@ -10,8 +10,8 @@ has count => (
     default => 0,
     traits  => ['Counter'],
     handles => {
-        inc_count => 'inc',
-        dec_count => 'dec',
+        inc_count   => 'inc',
+        dec_count   => 'dec',
         reset_count => 'reset',
     },
 );
@@ -27,23 +27,23 @@ sub get_event {
     my $count = $self->count;
     return if $idx >= $count or $idx < -$count;
     if ( $idx >= 0 ) {
-        return $self->events->[ -($self->shift + $idx + 1) ];
+        return $self->events->[ -( $self->shift + $idx + 1 ) ];
     }
     else {
-        return $self->events->[ -($self->shift + $count + $idx + 1) ];
+        return $self->events->[ -( $self->shift + $count + $idx + 1 ) ];
     }
 }
 
 sub shift_event {
     my ($self) = @_;
     $self->dec_count;
-    return $self->events->[-($self->shift + $self->count + 1)];
+    return $self->events->[ -( $self->shift + $self->count + 1 ) ];
 }
 
 sub push_event {
     my ($self) = @_;
     $self->inc_count;
-    return $self->events->[-($self->shift + 1)];
+    return $self->events->[ -( $self->shift + 1 ) ];
 }
 
 1;
