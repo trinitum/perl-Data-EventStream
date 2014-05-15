@@ -50,13 +50,44 @@ has aggregate_states => (
     },
 );
 
-has clock => ( is => 'ro', handles => [ 'set_time', 'get_time' ], );
+has time => ( is => 'ro', default => 0, writer => '_time', );
 
 has time_length => ( is => 'ro', default => 0, writer => '_set_time_length' );
 
 has time_sub => ( is => 'ro', );
 
 has length => ( is => 'ro', default => 0, writer => '_set_length' );
+
+sub set_time {
+    my ( $self, $time ) = @_;
+    croak "new time ($time) is less than current time (" . $self->time . ")" if $time < $self->time;
+    $self->_time($time);
+    my $gt = $self->time_sub;
+    croak "time_sub must be defined if you using time states" unless $gt;
+
+    for my $state ( @{ $self->aggregate_states } ) {
+        if ( $state->{type} eq 'time' ) {
+            my $win = $state->{_window};
+            $win->end_time($time);
+            if ( $win->time_length >= $state->{period} ) {
+                my $st = $time - $state->{period};
+                while ( $win->count and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st ) {
+                    $win->start_time($ev_time);
+                    $state->{_obj}->out( $win->shift_event, $win );
+                }
+                $win->start_time($st);
+            }
+            $state->{_obj}->window_update($win);
+        }
+    }
+
+    my $limit = $self->time - $self->time_length;
+    while ( $self->count_events > $self->length
+        and $gt->( $self->events->[0] ) <= $limit )
+    {
+        $self->shift_event;
+    }
+}
 
 sub add_state {
     my ( $self, $state, %params ) = @_;
@@ -72,11 +103,11 @@ sub add_state {
         }
     }
     elsif ( $params{type} eq 'time' ) {
-        croak "clock and time_sub must be defined for using time states"
-          unless $self->clock and $self->time_sub;
-        $params{_start_time} = $self->get_time;
+        croak "time_sub must be defined for using time states"
+          unless $self->time_sub;
+        $params{_window} = Data::EventStream::Window->new( events => $self->events, );
         if ( $params{period} > $self->time_length ) {
-            $self->_set_length( $params{length} );
+            $self->_set_time_length( $params{period} );
         }
     }
     else {
@@ -91,7 +122,8 @@ sub add_event {
     my $ev_num = $self->count_events;
     my $as     = $self->aggregate_states;
     my $time;
-    if ( my $gt = $self->time_sub ) {
+    my $gt = $self->time_sub;
+    if ($gt) {
         $time = $gt->($event);
     }
 
@@ -119,10 +151,23 @@ sub add_event {
                 $state->{_obj}->reset( $state->{_window} );
             }
         }
+        elsif ( $state->{type} eq 'time' ) {
+            my $ev_in = $state->{_window}->push_event;
+            $state->{_obj}->in( $ev_in, $state->{_window} );
+            $state->{on_in}->( $state->{_obj} ) if $state->{on_in};
+        }
     }
 
     if ( $self->count_events > $self->length ) {
-        $self->shift_event;
+        if ($gt) {
+            my $limit = $self->time - $self->time_length;
+            while ( $gt->( $self->events->[0] ) <= $limit ) {
+                $self->shift_event;
+            }
+        }
+        else {
+            $self->shift_event;
+        }
     }
 }
 

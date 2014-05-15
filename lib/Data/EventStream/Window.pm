@@ -22,6 +22,11 @@ has start_time => ( is => 'rw', default => 0, );
 
 has end_time => ( is => 'rw', default => 0, );
 
+sub time_length {
+    my $self = shift;
+    return $self->end_time - $self->start_time;
+}
+
 sub get_event {
     my ( $self, $idx ) = @_;
     my $count = $self->count;

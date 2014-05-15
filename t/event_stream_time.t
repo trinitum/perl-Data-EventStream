@@ -2,6 +2,7 @@ use Test::Most;
 use Test::FailWarnings;
 
 use Data::EventStream;
+use Data::EventStream::ClockMonotonic;
 
 {
 
@@ -37,13 +38,17 @@ use Data::EventStream;
     sub value {
         my $self = shift;
         return
-            $self->_duration ? sprintf( "%.5g", $self->_sum / $self->_duration )
+            $self->_duration ? sprintf( "%.6g", $self->_sum / $self->_duration )
           : $self->_start_event ? $self->_start_event->[1]
           :                       'NaN';
     }
 
     sub in {
         my ( $self, $event, $window ) = @_;
+
+        #        use DDP;
+        #        p $event;
+        #        p $window;
         my ( $time, $value ) = $self->time_value_sub->($event);
         if ( $self->_start_event ) {
             my $prev_last = $self->_last_event;
@@ -77,11 +82,20 @@ use Data::EventStream;
         $self->_sub_num( ( $start_time - $time ) * $value );
         $self->_start_event( [ $start_time, $value ] );
     }
+
+    sub window_update {
+        my ( $self, $window ) = @_;
+        my $last = $self->_last_event;
+        if ($last) {
+            $self->_last_event( [ $window->end_time, $last->[1] ] );
+            $self->_add_num( ( $window->end_time - $last->[0] ) * $last->[1] );
+        }
+    }
 }
 
 my $es = Data::EventStream->new(
-    clock => Data::EventStream::ClockMonotonic->new(time => 1),
-    get_time => sub { $_[0]->{time} },
+    time     => 1,
+    time_sub => sub { $_[0]->{time} },
 );
 
 my %params = (
@@ -108,7 +122,7 @@ my @events = (
     {
         time => 11.3,
         val  => 1,
-        ins  => { t3 => 11.3, t5 => 11.3, },
+        ins  => { t3 => 1, t5 => 1, },
     },
     {
         time => 12,
@@ -126,7 +140,7 @@ my @events = (
     {
         time => 13.2,
         val  => 4,
-        ins  => { t3 => 1.52631, t5 => 1.52631, },
+        ins  => { t3 => 1.52632, t5 => 1.52632, },
     },
     {
         time => 15,
