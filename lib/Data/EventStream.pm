@@ -73,6 +73,8 @@ sub set_time {
                 my $st = $time - $state->{period};
                 while ( $win->count and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st ) {
                     $win->start_time($ev_time);
+                    $state->{_obj}->window_update($win);
+                    $state->{on_out}->( $state->{_obj} ) if $state->{on_out};
                     $state->{_obj}->out( $win->shift_event, $win );
                 }
                 $win->start_time($st);
