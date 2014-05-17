@@ -2,7 +2,6 @@ use Test::Most;
 use Test::FailWarnings;
 
 use Data::EventStream;
-use Data::EventStream::ClockMonotonic;
 
 {
 
@@ -38,7 +37,7 @@ use Data::EventStream::ClockMonotonic;
     sub value {
         my $self = shift;
         return
-            $self->_duration ? sprintf( "%.6g", $self->_sum / $self->_duration )
+            $self->_duration ? 0 + sprintf( "%.6g", $self->_sum / $self->_duration )
           : $self->_start_event ? $self->_start_event->[1]
           :                       'NaN';
     }
@@ -81,6 +80,7 @@ use Data::EventStream::ClockMonotonic;
         my $start_time = $window->start_time;
         $self->_sub_num( ( $start_time - $time ) * $value );
         $self->_start_event( [ $start_time, $value ] );
+        $self->window_update($window);
     }
 
     sub window_update {
@@ -89,6 +89,11 @@ use Data::EventStream::ClockMonotonic;
         if ($last) {
             $self->_last_event( [ $window->end_time, $last->[1] ] );
             $self->_add_num( ( $window->end_time - $last->[0] ) * $last->[1] );
+        }
+        my $start = $self->_start_event;
+        if ( $start and $start->[0] < $window->start_time ) {
+            $self->_start_event( [ $window->start_time, $start->[1] ] );
+            $self->_sub_num( ( $window->start_time - $start->[0] ) * $start->[1] );
         }
     }
 }
@@ -111,9 +116,22 @@ my %resets;
 for my $as ( keys %params ) {
     $average{$as} = TimeAverager->new;
     $es->add_state(
-        $average{$as}, %{ $params{$as} },
-        on_in    => sub { $ins{$as}    = $_[0]->value; },
-        on_out   => sub { $outs{$as}   = $_[0]->value; },
+        $average{$as},
+        %{ $params{$as} },
+        on_in => sub { $ins{$as} = $_[0]->value; },
+        on_out => sub {
+            if ( $outs{$as} ) {
+                if ( ref $outs{$as} eq 'ARRAY' ) {
+                    push @{ $outs{$as} }, $_[0]->value;
+                }
+                else {
+                    $outs{$as} = [ $outs{$as}, $_[0]->value ];
+                }
+            }
+            else {
+                $outs{$as} = $_[0]->value;
+            }
+        },
         on_reset => sub { $resets{$as} = $_[0]->value; },
     );
 }
@@ -145,24 +163,24 @@ my @events = (
     {
         time => 15,
         vals => { t3 => 3.13333, t5 => 2.72973, },
-        outs => { t3 => 3.13333, },
+        outs => { t3 => 2.72973, },
     },
     {
         time => 16,
         vals => { t3 => 3.93333, t5 => 3, },
-        outs => { t3 => 3.93333, },
+        outs => { t3 => 3.84848, },
     },
     {
         time => 17.1,
         val  => 8,
         ins  => { t3 => 4, t5 => 3.54, },
-        outs => { t3 => 4, t5 => 3.54, },
+        outs => { t3 => 4, t5 => 3.18966, },
     },
     {
         time => 19.2,
         val  => 5,
         ins  => { t3 => 6.8, t5 => 5.68, },
-        outs => { t5 => 5.68, },
+        outs => { t5 => [ 5.21538, 5.4, ], },
     },
     {
         time => 20,
@@ -172,18 +190,18 @@ my @events = (
         time => 20.8,
         val  => 2,
         ins  => { t3 => 6.4, t5 => 6, },
-        outs => { t3 => 6.4, },
+        outs => { t3 => 6.7027, },
     },
     {
         time => 23,
         vals => { t3 => 2.8, t5 => 4.4, },
-        outs => { t3 => 2.8, t5 => 4.4, },
+        outs => { t3 => 3.26316, t5 => 4.94915, },
     },
     {
         time => 30,
         val  => 4,
         ins  => { t3 => 2, t5 => 2, },
-        outs => { t3 => 2, t5 => 2, },
+        outs => { t3 => 2, t5 => [ 2.44444, 2 ], },
     },
     {
         time => 33,
@@ -200,7 +218,7 @@ my @events = (
         time => 35.2,
         val  => 9,
         ins  => { t3 => 5.2, t5 => 4.72, },
-        outs => { t5 => 4.72, },
+        outs => { t5 => 4.69231, },
     },
     {
         time => 36,
@@ -210,7 +228,7 @@ my @events = (
     {
         time => 45,
         vals => { t3 => 9, t5 => 9, },
-        outs => { t3 => 9, t5 => 9, },
+        outs => { t3 => [ 8.70435, 9 ], t5 => [ 8.38333, 8.70435, 9 ], },
     },
 );
 
@@ -235,6 +253,7 @@ for my $ev (@events) {
         }
     };
     $i++;
+    last if $ev->{stop};
 }
 
 done_testing;
