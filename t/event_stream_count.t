@@ -79,7 +79,7 @@ my %resets;
 
 for my $as ( keys %params ) {
     $average{$as} = Averager->new;
-    $es->add_state(
+    $es->add_aggregator(
         $average{$as}, %{ $params{$as} },
         on_enter => sub { $ins{$as}    = $_[0]->value; },
         on_leave => sub { $outs{$as}   = $_[0]->value; },

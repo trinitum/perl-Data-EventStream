@@ -41,12 +41,12 @@ has events => (
     },
 );
 
-has aggregate_states => (
+has aggregators => (
     is      => 'ro',
     traits  => ['Array'],
     default => sub { [] },
     handles => {
-        push_state => 'push',
+        push_aggregator => 'push',
     },
 );
 
@@ -63,23 +63,23 @@ sub set_time {
     croak "new time ($time) is less than current time (" . $self->time . ")" if $time < $self->time;
     $self->_time($time);
     my $gt = $self->time_sub;
-    croak "time_sub must be defined if you using time states" unless $gt;
+    croak "time_sub must be defined if you using time aggregators" unless $gt;
 
-    for my $state ( @{ $self->aggregate_states } ) {
-        if ( $state->{type} eq 'time' ) {
-            my $win = $state->{_window};
+    for my $aggregator ( @{ $self->aggregators } ) {
+        if ( $aggregator->{type} eq 'time' ) {
+            my $win = $aggregator->{_window};
             $win->end_time($time);
-            if ( $win->time_length >= $state->{period} ) {
-                my $st = $time - $state->{period};
+            if ( $win->time_length >= $aggregator->{period} ) {
+                my $st = $time - $aggregator->{period};
                 while ( $win->count and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st ) {
                     $win->start_time($ev_time);
-                    $state->{_obj}->window_update($win);
-                    $state->{on_leave}->( $state->{_obj} ) if $state->{on_leave};
-                    $state->{_obj}->leave( $win->shift_event, $win );
+                    $aggregator->{_obj}->window_update($win);
+                    $aggregator->{on_leave}->( $aggregator->{_obj} ) if $aggregator->{on_leave};
+                    $aggregator->{_obj}->leave( $win->shift_event, $win );
                 }
                 $win->start_time($st);
             }
-            $state->{_obj}->window_update($win);
+            $aggregator->{_obj}->window_update($win);
         }
     }
 
@@ -91,9 +91,9 @@ sub set_time {
     }
 }
 
-sub add_state {
-    my ( $self, $state, %params ) = @_;
-    $params{_obj} = $state;
+sub add_aggregator {
+    my ( $self, $aggregator, %params ) = @_;
+    $params{_obj} = $aggregator;
     if ( $params{type} eq 'count' ) {
         $params{shift} //= 0;
         $params{_window} = Data::EventStream::Window->new(
@@ -105,7 +105,7 @@ sub add_state {
         }
     }
     elsif ( $params{type} eq 'time' ) {
-        croak "time_sub must be defined for using time states"
+        croak "time_sub must be defined for using time aggregators"
           unless $self->time_sub;
         $params{_window} = Data::EventStream::Window->new( events => $self->events, );
         if ( $params{period} > $self->time_length ) {
@@ -113,50 +113,50 @@ sub add_state {
         }
     }
     else {
-        croak "Unknown state type $params{type}";
+        croak "Unknown aggregator type $params{type}";
     }
-    $self->push_state( \%params );
+    $self->push_aggregator( \%params );
 }
 
 sub add_event {
     my ( $self, $event ) = @_;
     my $ev     = $self->events;
     my $ev_num = $self->count_events;
-    my $as     = $self->aggregate_states;
+    my $as     = $self->aggregators;
     my $time;
     my $gt = $self->time_sub;
     if ($gt) {
         $time = $gt->($event);
     }
 
-    for my $state (@$as) {
-        if ( $state->{type} eq 'count' ) {
-            if ( $state->{_window}->count == $state->{length} ) {
-                $state->{on_leave}->( $state->{_obj} ) if $state->{on_leave};
-                my $ev_out = $state->{_window}->shift_event;
-                $state->{_obj}->leave( $ev_out, $state->{_window} );
+    for my $aggregator (@$as) {
+        if ( $aggregator->{type} eq 'count' ) {
+            if ( $aggregator->{_window}->count == $aggregator->{length} ) {
+                $aggregator->{on_leave}->( $aggregator->{_obj} ) if $aggregator->{on_leave};
+                my $ev_out = $aggregator->{_window}->shift_event;
+                $aggregator->{_obj}->leave( $ev_out, $aggregator->{_window} );
             }
         }
     }
 
     $self->push_event($event);
 
-    for my $state (@$as) {
-        if ( $state->{type} eq 'count' ) {
-            next if $ev_num < $state->{shift};
-            my $ev_in = $state->{_window}->push_event;
-            $state->{_obj}->enter( $ev_in, $state->{_window} );
-            $state->{on_enter}->( $state->{_obj} ) if $state->{on_enter};
-            if ( $state->{batch} and $state->{_window}->count == $state->{length} ) {
-                $state->{on_reset}->( $state->{_obj} ) if $state->{on_reset};
-                $state->{_window}->reset_count;
-                $state->{_obj}->reset( $state->{_window} );
+    for my $aggregator (@$as) {
+        if ( $aggregator->{type} eq 'count' ) {
+            next if $ev_num < $aggregator->{shift};
+            my $ev_in = $aggregator->{_window}->push_event;
+            $aggregator->{_obj}->enter( $ev_in, $aggregator->{_window} );
+            $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
+            if ( $aggregator->{batch} and $aggregator->{_window}->count == $aggregator->{length} ) {
+                $aggregator->{on_reset}->( $aggregator->{_obj} ) if $aggregator->{on_reset};
+                $aggregator->{_window}->reset_count;
+                $aggregator->{_obj}->reset( $aggregator->{_window} );
             }
         }
-        elsif ( $state->{type} eq 'time' ) {
-            my $ev_in = $state->{_window}->push_event;
-            $state->{_obj}->enter( $ev_in, $state->{_window} );
-            $state->{on_enter}->( $state->{_obj} ) if $state->{on_enter};
+        elsif ( $aggregator->{type} eq 'time' ) {
+            my $ev_in = $aggregator->{_window}->push_event;
+            $aggregator->{_obj}->enter( $ev_in, $aggregator->{_window} );
+            $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
         }
     }
 

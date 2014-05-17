@@ -112,7 +112,7 @@ my %resets;
 
 for my $as ( keys %params ) {
     $average{$as} = TimeAverager->new;
-    $es->add_state(
+    $es->add_aggregator(
         $average{$as},
         %{ $params{$as} },
         on_enter => sub { $ins{$as} = $_[0]->value; },
@@ -246,7 +246,7 @@ for my $ev (@events) {
             for ( keys %{ $ev->{vals} } ) {
                 $vals{$_} = $average{$_}->value;
             }
-            eq_or_diff \%vals, $ev->{vals}, "states have expected values";
+            eq_or_diff \%vals, $ev->{vals}, "aggregators have expected values";
         }
     };
     $i++;
