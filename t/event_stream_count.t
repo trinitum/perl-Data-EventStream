@@ -20,8 +20,8 @@ use Data::EventStream;
         traits  => ['Number'],
         default => 0,
         handles => {
-            _add_num => 'add',
-            _sub_num => 'sub',
+            _sum_add => 'add',
+            _sum_sub => 'sub',
         },
     );
 
@@ -41,10 +41,10 @@ use Data::EventStream;
         return $self->_count ? $self->_sum / $self->_count : 'NaN';
     }
 
-    sub in {
+    sub enter {
         my ( $self, $event ) = @_;
         my $val = $self->value_sub->($event);
-        $self->_add_num($val);
+        $self->_sum_add($val);
         $self->_inc_count;
     }
 
@@ -54,11 +54,11 @@ use Data::EventStream;
         $self->_reset_count;
     }
 
-    sub out {
+    sub leave {
         my ( $self, $event ) = @_;
         my $val = $self->value_sub->($event);
         $self->_dec_count;
-        $self->_sub_num($val);
+        $self->_sum_sub($val);
     }
 }
 
@@ -81,8 +81,8 @@ for my $as ( keys %params ) {
     $average{$as} = Averager->new;
     $es->add_state(
         $average{$as}, %{ $params{$as} },
-        on_in    => sub { $ins{$as}    = $_[0]->value; },
-        on_out   => sub { $outs{$as}   = $_[0]->value; },
+        on_enter => sub { $ins{$as}    = $_[0]->value; },
+        on_leave => sub { $outs{$as}   = $_[0]->value; },
         on_reset => sub { $resets{$as} = $_[0]->value; },
     );
 }
@@ -147,9 +147,9 @@ my $i = 1;
 for my $ev (@events) {
     subtest "event $i: val=$ev->{val}" => sub {
         $es->add_event( { val => $ev->{val} } );
-        eq_or_diff \%ins,    $ev->{ins}    // {}, "got expected ins";
+        eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
         %ins = ();
-        eq_or_diff \%outs,   $ev->{outs}   // {}, "got expected outs";
+        eq_or_diff \%outs, $ev->{outs} // {}, "got expected outs";
         %outs = ();
         eq_or_diff \%resets, $ev->{resets} // {}, "got expected resets";
         %resets = ();

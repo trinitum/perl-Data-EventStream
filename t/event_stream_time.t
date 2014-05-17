@@ -20,8 +20,8 @@ use Data::EventStream;
         traits  => ['Number'],
         default => 0,
         handles => {
-            _add_num => 'add',
-            _sub_num => 'sub',
+            _sum_add => 'add',
+            _sum_sub => 'sub',
         },
     );
 
@@ -42,17 +42,14 @@ use Data::EventStream;
           :                       'NaN';
     }
 
-    sub in {
+    sub enter {
         my ( $self, $event, $window ) = @_;
 
-        #        use DDP;
-        #        p $event;
-        #        p $window;
         my ( $time, $value ) = $self->time_value_sub->($event);
         if ( $self->_start_event ) {
             my $prev_last = $self->_last_event;
             $self->_last_event( [ $time, $value ] );
-            $self->_add_num( ( $time - $prev_last->[0] ) * $prev_last->[1] );
+            $self->_sum_add( ( $time - $prev_last->[0] ) * $prev_last->[1] );
         }
         else {
             # this is first observed event
@@ -72,13 +69,13 @@ use Data::EventStream;
         $self->_sum(0);
     }
 
-    sub out {
+    sub leave {
         my ( $self, $event, $window ) = @_;
         my ( $time, $value ) = $self->time_value_sub->($event);
         my $start_ev = $self->_start_event;
-        $self->_sub_num( ( $time - $start_ev->[0] ) * $start_ev->[1] );
+        $self->_sum_sub( ( $time - $start_ev->[0] ) * $start_ev->[1] );
         my $start_time = $window->start_time;
-        $self->_sub_num( ( $start_time - $time ) * $value );
+        $self->_sum_sub( ( $start_time - $time ) * $value );
         $self->_start_event( [ $start_time, $value ] );
         $self->window_update($window);
     }
@@ -88,12 +85,12 @@ use Data::EventStream;
         my $last = $self->_last_event;
         if ($last) {
             $self->_last_event( [ $window->end_time, $last->[1] ] );
-            $self->_add_num( ( $window->end_time - $last->[0] ) * $last->[1] );
+            $self->_sum_add( ( $window->end_time - $last->[0] ) * $last->[1] );
         }
         my $start = $self->_start_event;
         if ( $start and $start->[0] < $window->start_time ) {
             $self->_start_event( [ $window->start_time, $start->[1] ] );
-            $self->_sub_num( ( $window->start_time - $start->[0] ) * $start->[1] );
+            $self->_sum_sub( ( $window->start_time - $start->[0] ) * $start->[1] );
         }
     }
 }
@@ -118,8 +115,8 @@ for my $as ( keys %params ) {
     $es->add_state(
         $average{$as},
         %{ $params{$as} },
-        on_in => sub { $ins{$as} = $_[0]->value; },
-        on_out => sub {
+        on_enter => sub { $ins{$as} = $_[0]->value; },
+        on_leave => sub {
             if ( $outs{$as} ) {
                 if ( ref $outs{$as} eq 'ARRAY' ) {
                     push @{ $outs{$as} }, $_[0]->value;

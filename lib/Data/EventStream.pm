@@ -74,8 +74,8 @@ sub set_time {
                 while ( $win->count and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st ) {
                     $win->start_time($ev_time);
                     $state->{_obj}->window_update($win);
-                    $state->{on_out}->( $state->{_obj} ) if $state->{on_out};
-                    $state->{_obj}->out( $win->shift_event, $win );
+                    $state->{on_leave}->( $state->{_obj} ) if $state->{on_leave};
+                    $state->{_obj}->leave( $win->shift_event, $win );
                 }
                 $win->start_time($st);
             }
@@ -132,9 +132,9 @@ sub add_event {
     for my $state (@$as) {
         if ( $state->{type} eq 'count' ) {
             if ( $state->{_window}->count == $state->{length} ) {
-                $state->{on_out}->( $state->{_obj} ) if $state->{on_out};
+                $state->{on_leave}->( $state->{_obj} ) if $state->{on_leave};
                 my $ev_out = $state->{_window}->shift_event;
-                $state->{_obj}->out( $ev_out, $state->{_window} );
+                $state->{_obj}->leave( $ev_out, $state->{_window} );
             }
         }
     }
@@ -145,8 +145,8 @@ sub add_event {
         if ( $state->{type} eq 'count' ) {
             next if $ev_num < $state->{shift};
             my $ev_in = $state->{_window}->push_event;
-            $state->{_obj}->in( $ev_in, $state->{_window} );
-            $state->{on_in}->( $state->{_obj} ) if $state->{on_in};
+            $state->{_obj}->enter( $ev_in, $state->{_window} );
+            $state->{on_enter}->( $state->{_obj} ) if $state->{on_enter};
             if ( $state->{batch} and $state->{_window}->count == $state->{length} ) {
                 $state->{on_reset}->( $state->{_obj} ) if $state->{on_reset};
                 $state->{_window}->reset_count;
@@ -155,8 +155,8 @@ sub add_event {
         }
         elsif ( $state->{type} eq 'time' ) {
             my $ev_in = $state->{_window}->push_event;
-            $state->{_obj}->in( $ev_in, $state->{_window} );
-            $state->{on_in}->( $state->{_obj} ) if $state->{on_in};
+            $state->{_obj}->enter( $ev_in, $state->{_window} );
+            $state->{on_enter}->( $state->{_obj} ) if $state->{on_enter};
         }
     }
 
