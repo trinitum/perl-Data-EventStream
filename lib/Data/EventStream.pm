@@ -1,6 +1,6 @@
 package Data::EventStream;
 use Moose;
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 $VERSION = eval $VERSION;
 use Carp;
 use Data::EventStream::Window;
@@ -11,7 +11,7 @@ Data::EventStream - Perl extension for event processing
 
 =head1 VERSION
 
-This document describes Data::EventStream version 0.02
+This document describes Data::EventStream version 0.03
 
 =head1 SYNOPSIS
 

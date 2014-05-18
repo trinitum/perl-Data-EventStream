@@ -1,3 +1,6 @@
+0.03 Sun May 18 2014 Pavel Shaydo <zwon@cpan.org>
+    - completely reworked version
+
 0.02 Mon Apr  7 2014 Pavel Shaydo <zwon@cpan.org>
     - fix dependencies
 
