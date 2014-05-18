@@ -7,11 +7,11 @@ use Data::EventStream::Window;
 
 =head1 NAME
 
-Data::EventStream - Perl extension for processing event stream
+Data::EventStream - Perl extension for event processing
 
 =head1 VERSION
 
-0.01
+This document describes Data::EventStream version 0.02
 
 =head1 SYNOPSIS
 
@@ -20,13 +20,34 @@ Data::EventStream - Perl extension for processing event stream
 =head1 DESCRIPTION
 
 B<WARNING:> this distribution is in the phase of active development, all
-interfaces are likely to change and documentation is non-existent.
+interfaces are likely to change in next versions.
 
-Collection of modules for processing streams of events.
+Module provides methods to analyze stream of events.
 
 =head1 METHODS
 
+=head2 $class->new(%params)
+
+Creates a new instance. The following parameters are accepted:
+
+=over 4
+
+=item B<time>
+
+Initial model time, by default 0
+
+=item B<time_sub>
+
+Reference to a subroutine that returns time associated with the event passed
+to it as the only parameter.
+
+=back
+
 =cut
+
+has time => ( is => 'ro', default => 0, writer => '_time', );
+
+has time_sub => ( is => 'ro', );
 
 has events => (
     is      => 'ro',
@@ -50,13 +71,15 @@ has aggregators => (
     },
 );
 
-has time => ( is => 'ro', default => 0, writer => '_time', );
-
 has time_length => ( is => 'ro', default => 0, writer => '_set_time_length' );
 
-has time_sub => ( is => 'ro', );
-
 has length => ( is => 'ro', default => 0, writer => '_set_length' );
+
+=head2 $self->set_time($time)
+
+Set new model time. This time must not be less than the current model time.
+
+=cut
 
 sub set_time {
     my ( $self, $time ) = @_;
@@ -91,6 +114,74 @@ sub set_time {
     }
 }
 
+=head2 $self->add_aggregator($aggregator, type => (count|time), %params)
+
+Add a new aggregator object. Depending on type, various parameters can be
+specified.
+
+=head3 Options common for all aggregators
+
+=over 4
+
+=item B<on_enter>
+
+Callback that should be invoked after event entered aggregator.
+Aggregator object is passed as the only argument to callback.
+
+=item B<on_leave>
+
+Callback that should be invoked before event leaves aggregator.
+Aggregator object is passed as the only argument to callback.
+
+=item B<on_reset>
+
+Callback that should be invoked before resetting the aggregator.
+Aggregator object is passed as the only argument to callback.
+
+=back
+
+=head3 Events number based aggregators
+
+If aggregator has type B<count>, then it aggregates data for particular
+number of events and the following parameters are accepted:
+
+=over 4
+
+=item B<length>
+
+Aggregate data for the specified number of events. If aggregator already
+aggregates data for that many events, then one event should leave aggregator
+before another one can enter it. This parameter is required.
+
+=item B<shift>
+
+Aggregate data with delay. Event enters aggregator only after specified by
+I<shift> number of events were added to the stream. By default 0.
+
+=item B<batch>
+
+As soon as number of events specified by I<length> parameter is reached,
+aggregator is reset and all events leave it at once. By default not set.
+
+=back
+
+=head3 Time based aggregators
+
+If aggregator has type B<time>, then it aggregates data for the specified
+period of time and the following parameters are accepted:
+
+=over 4
+
+=item B<period>
+
+Aggregate data for the specified period of time. Each time I<set_time> is
+called, events that are older then the specified period are leaving aggregator.
+This option is required.
+
+=back
+
+=cut
+
 sub add_aggregator {
     my ( $self, $aggregator, %params ) = @_;
     $params{_obj} = $aggregator;
@@ -117,6 +208,12 @@ sub add_aggregator {
     }
     $self->push_aggregator( \%params );
 }
+
+=head2 $self->add_event($event)
+
+Add new event
+
+=cut
 
 sub add_event {
     my ( $self, $event ) = @_;

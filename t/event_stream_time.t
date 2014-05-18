@@ -7,6 +7,7 @@ use Data::EventStream;
 
     package TimeAverager;
     use Moose;
+    with 'Data::EventStream::Aggregator';
 
     has time_value_sub => (
         is      => 'ro',
