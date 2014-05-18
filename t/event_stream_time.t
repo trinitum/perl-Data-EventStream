@@ -104,6 +104,7 @@ my $es = Data::EventStream->new(
 my %params = (
     t3 => { type => 'time', period => '3', },
     t5 => { type => 'time', period => '5', },
+    b4 => { type => 'time', period => '4', batch => 1, },
 );
 
 my %average;
@@ -111,26 +112,35 @@ my %ins;
 my %outs;
 my %resets;
 
+sub store_observed_value {
+    my ( $hr, $key, $value ) = @_;
+    if ( defined $hr->{$key} ) {
+        if ( ref $hr->{$key} eq 'ARRAY' ) {
+            push @{ $hr->{$key} }, $value;
+        }
+        else {
+            $hr->{$key} = [ $hr->{$key}, $value, ];
+        }
+    }
+    else {
+        $hr->{$key} = $value;
+    }
+}
+
 for my $as ( keys %params ) {
     $average{$as} = TimeAverager->new;
     $es->add_aggregator(
         $average{$as},
         %{ $params{$as} },
-        on_enter => sub { $ins{$as} = $_[0]->value; },
-        on_leave => sub {
-            if ( $outs{$as} ) {
-                if ( ref $outs{$as} eq 'ARRAY' ) {
-                    push @{ $outs{$as} }, $_[0]->value;
-                }
-                else {
-                    $outs{$as} = [ $outs{$as}, $_[0]->value ];
-                }
-            }
-            else {
-                $outs{$as} = $_[0]->value;
-            }
+        on_enter => sub {
+            store_observed_value( \%ins, $as, $_[0]->value );
         },
-        on_reset => sub { $resets{$as} = $_[0]->value; },
+        on_leave => sub {
+            store_observed_value( \%outs, $as, $_[0]->value );
+        },
+        on_reset => sub {
+            store_observed_value( \%resets, $as, $_[0]->value );
+        },
     );
 }
 
@@ -138,95 +148,102 @@ my @events = (
     {
         time => 11.3,
         val  => 1,
-        ins  => { t3 => 1, t5 => 1, },
+        ins  => { t3 => 1, t5 => 1, b4 => 1, },
     },
     {
-        time => 12,
-        vals => { t3 => 1, t5 => 1, },
+        time   => 12,
+        resets => { b4 => 1, },
+        vals   => { t3 => 1, t5 => 1, b4 => 1, },
     },
     {
         time => 12.7,
         val  => 3,
-        ins  => { t3 => 1, t5 => 1, },
+        ins  => { t3 => 1, t5 => 1, b4 => 1, },
     },
     {
         time => 13,
-        vals => { t3 => 1.35294, t5 => 1.35294, },
+        vals => { t3 => 1.35294, t5 => 1.35294, b4 => 1.6, },
     },
     {
         time => 13.2,
         val  => 4,
-        ins  => { t3 => 1.52632, t5 => 1.52632, },
+        ins  => { t3 => 1.52632, t5 => 1.52632, b4 => 1.83333, },
     },
     {
         time => 15,
-        vals => { t3 => 3.13333, t5 => 2.72973, },
         outs => { t3 => 2.72973, },
+        vals => { t3 => 3.13333, t5 => 2.72973, b4 => 3.13333, },
     },
     {
-        time => 16,
-        vals => { t3 => 3.93333, t5 => 3, },
-        outs => { t3 => 3.84848, },
+        time   => 16,
+        resets => { b4 => 3.35, },
+        outs   => { t3 => 3.84848, },
+        vals   => { t3 => 3.93333, t5 => 3, b4 => 4, },
     },
     {
         time => 17.1,
         val  => 8,
-        ins  => { t3 => 4, t5 => 3.54, },
         outs => { t3 => 4, t5 => 3.18966, },
+        ins  => { t3 => 4, t5 => 3.54, b4 => 4, },
     },
     {
         time => 19.2,
         val  => 5,
-        ins  => { t3 => 6.8, t5 => 5.68, },
         outs => { t5 => [ 5.21538, 5.4, ], },
+        ins  => { t3 => 6.8, t5 => 5.68, b4 => 6.525, },
     },
     {
-        time => 20,
-        vals => { t3 => 7.06667, t5 => 5.84, },
+        time   => 20,
+        resets => { b4 => 6.3, },
+        vals   => { t3 => 7.06667, t5 => 5.84, b4 => 5, },
     },
     {
         time => 20.8,
         val  => 2,
-        ins  => { t3 => 6.4, t5 => 6, },
         outs => { t3 => 6.7027, },
+        ins  => { t3 => 6.4, t5 => 6, b4 => 5, },
     },
     {
         time => 23,
-        vals => { t3 => 2.8, t5 => 4.4, },
         outs => { t3 => 3.26316, t5 => 4.94915, },
+        vals => { t3 => 2.8, t5 => 4.4, b4 => 2.8, },
     },
     {
-        time => 30,
-        val  => 4,
-        ins  => { t3 => 2, t5 => 2, },
-        outs => { t3 => 2, t5 => [ 2.44444, 2 ], },
+        time   => 30,
+        val    => 4,
+        resets => { b4 => [ 2.6, 2, ], },
+        outs   => { t3 => 2, t5 => [ 2.44444, 2 ], },
+        ins    => { t3 => 2, t5 => 2, b4 => 2, },
     },
     {
-        time => 33,
-        val  => 1,
-        ins  => { t3 => 4, t5 => 3.2, },
-        outs => { t3 => 4, },
+        time   => 33,
+        val    => 1,
+        resets => { b4 => 6, },
+        outs   => { t3 => 4, },
+        ins    => { t3 => 4, t5 => 3.2, b4 => 4, },
     },
     {
         time => 33.5,
         val  => 7,
-        ins  => { t3 => 3.5, t5 => 3.1, },
+        ins  => { t3 => 3.5, t5 => 3.1, b4 => 3, },
     },
     {
         time => 35.2,
         val  => 9,
-        ins  => { t3 => 5.2, t5 => 4.72, },
         outs => { t5 => 4.69231, },
+        ins  => { t3 => 5.2, t5 => 4.72, b4 => 5.125, },
     },
     {
-        time => 36,
-        vals => { t3 => 6.53333, t5 => 5.52, },
-        outs => { t3 => 6.53333, },
+        time   => 36,
+        resets => { b4 => 5.9, },
+        outs   => { t3 => 6.53333, },
+        vals   => { t3 => 6.53333, t5 => 5.52, b4 => 9, },
     },
     {
-        time => 45,
-        vals => { t3 => 9, t5 => 9, },
-        outs => { t3 => [ 8.70435, 9 ], t5 => [ 8.38333, 8.70435, 9 ], },
+        time   => 45,
+        resets => { b4 => [ 9, 9, ], },
+        outs   => { t3 => [ 8.70435, 9 ], t5 => [ 8.38333, 8.70435, 9 ], },
+        vals => { t3 => 9, t5 => 9, b4 => 9, },
     },
 );
 
