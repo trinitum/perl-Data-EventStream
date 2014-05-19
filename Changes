@@ -1,3 +1,7 @@
+0.04 Tue May 20 2014 Pavel Shaydo <zwon@cpan.org>
+    - implement batch mode for time aggregators
+    - require perl 5.10
+
 0.03 Sun May 18 2014 Pavel Shaydo <zwon@cpan.org>
     - completely reworked version
 
