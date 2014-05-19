@@ -92,18 +92,34 @@ sub set_time {
     for my $aggregator ( @{ $self->aggregators } ) {
         if ( $aggregator->{type} eq 'time' ) {
             my $win = $aggregator->{_window};
-            $win->end_time($time);
-            if ( $win->time_length >= $aggregator->{period} ) {
-                my $st = $time - $aggregator->{period};
-                while ( $win->count and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st ) {
-                    $win->start_time($ev_time);
-                    $aggregator->{_obj}->window_update($win);
-                    $aggregator->{on_leave}->( $aggregator->{_obj} ) if $aggregator->{on_leave};
-                    $aggregator->{_obj}->leave( $win->shift_event, $win );
+            next if $win->start_time > $time;
+            my $period = $aggregator->{period};
+            my $obj    = $aggregator->{_obj};
+            if ( $aggregator->{batch} ) {
+                while ( $time - $win->start_time >= $period ) {
+                    $win->end_time( $win->start_time + $period );
+                    $obj->window_update($win);
+                    $aggregator->{on_reset}->($obj) if $aggregator->{on_reset};
+                    $win->start_time( $win->end_time );
+                    $obj->reset($win);
                 }
-                $win->start_time($st);
+                $win->end_time($time);
             }
-            $aggregator->{_obj}->window_update($win);
+            else {
+                $win->end_time($time);
+                if ( $win->time_length >= $period ) {
+                    my $st = $time - $period;
+                    while ( $win->count and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st )
+                    {
+                        $win->start_time($ev_time);
+                        $obj->window_update($win);
+                        $aggregator->{on_leave}->($obj) if $aggregator->{on_leave};
+                        $obj->leave( $win->shift_event, $win );
+                    }
+                    $win->start_time($st);
+                }
+            }
+            $obj->window_update($win);
         }
     }
 
@@ -176,8 +192,16 @@ period of time and the following parameters are accepted:
 =item B<period>
 
 Aggregate data for the specified period of time. Each time I<set_time> is
-called, events that are older then the specified period are leaving aggregator.
-This option is required.
+called, events that are older then the specified period are leaving aggregator. This option is required.
+
+=item B<batch>
+
+Each time I<period> has passed aggregator is reset and all events leave it at
+once. By default not set.
+
+=item B<start_time>
+
+Time when first period should start. By default current model time.
 
 =back
 
@@ -189,8 +213,9 @@ sub add_aggregator {
     if ( $params{type} eq 'count' ) {
         $params{shift} //= 0;
         $params{_window} = Data::EventStream::Window->new(
-            shift  => $params{shift},
-            events => $self->events,
+            shift      => $params{shift},
+            events     => $self->events,
+            start_time => $self->time,
         );
         if ( $params{shift} + $params{length} > $self->length ) {
             $self->_set_length( $params{shift} + $params{length} );
@@ -199,7 +224,10 @@ sub add_aggregator {
     elsif ( $params{type} eq 'time' ) {
         croak "time_sub must be defined for using time aggregators"
           unless $self->time_sub;
-        $params{_window} = Data::EventStream::Window->new( events => $self->events, );
+        $params{_window} = Data::EventStream::Window->new(
+            events     => $self->events,
+            start_time => $params{start_time} // $self->time,
+        );
         if ( $params{period} > $self->time_length ) {
             $self->_set_time_length( $params{period} );
         }
