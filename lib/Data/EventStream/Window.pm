@@ -1,4 +1,5 @@
 package Data::EventStream::Window;
+use 5.010;
 use Moose;
 our $VERSION = "0.03";
 $VERSION = eval $VERSION;
