@@ -227,8 +227,9 @@ sub add_event {
     my $gt = $self->time_sub;
     if ($gt) {
         $time = $gt->($event);
-
-        # TODO: maybe check time and set it if needed
+        if ($time > $self->time) {
+            $self->set_time($time);
+        }
     }
 
     for my $aggregator (@$as) {

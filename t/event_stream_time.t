@@ -254,7 +254,7 @@ my @events = (
 my $i = 1;
 for my $ev (@events) {
     subtest "event $i: time=$ev->{time}" . ( $ev->{val} ? " val=$ev->{val}" : "" ) => sub {
-        $es->set_time( $ev->{time} );
+        $es->set_time( $ev->{time} ) unless $ev->{val};
         $es->add_event( { time => $ev->{time}, val => $ev->{val} } ) if $ev->{val};
         eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
         %ins = ();
