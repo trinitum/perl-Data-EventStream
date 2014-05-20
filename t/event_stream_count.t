@@ -65,11 +65,11 @@ use Data::EventStream;
 my $es = Data::EventStream->new();
 
 my %params = (
-    'c3' => { type => 'count', length => 3 },
-    'c5' => { type => 'count', length => 5 },
-    'b4' => { type => 'count', length => 4, batch => 1 },
-    'd4' => { type => 'count', length => 4, batch => 1, shift => 2 },
-    'd3' => { type => 'count', length => 3, shift => 2 },
+    'c3' => { count => 3 },
+    'c5' => { count => 5 },
+    'b4' => { count => 4, batch => 1 },
+    'd4' => { count => 4, batch => 1, shift => 2 },
+    'd3' => { count => 3, shift => 2 },
 );
 
 my %average;

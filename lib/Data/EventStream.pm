@@ -90,10 +90,10 @@ sub set_time {
     croak "time_sub must be defined if you using time aggregators" unless $gt;
 
     for my $aggregator ( @{ $self->aggregators } ) {
-        if ( $aggregator->{type} eq 'time' ) {
+        if ( $aggregator->{duration} ) {
             my $win = $aggregator->{_window};
             next if $win->start_time > $time;
-            my $period = $aggregator->{period};
+            my $period = $aggregator->{duration};
             my $obj    = $aggregator->{_obj};
             if ( $aggregator->{batch} ) {
                 while ( $time - $win->start_time >= $period ) {
@@ -131,19 +131,43 @@ sub set_time {
     }
 }
 
-=head2 $self->add_aggregator($aggregator, type => (count|time), %params)
+=head2 $self->add_aggregator($aggregator, %params)
 
-Add a new aggregator object. Depending on type, various parameters can be
-specified.
-
-=head3 Options common for all aggregators
+Add a new aggregator object. The following options are accepted:
 
 =over 4
 
+=item B<count>
+
+Maximum number of event for which aggregator can aggregate data. When number
+of aggregated events reaches this limit, each time before a new event enters
+aggregator, the oldest aggregated event will leave it.
+
+=item B<duration>
+
+Maximum period of time handled by aggregator. Each time the model time is
+updated, events with age exceeding specified duration are leaving aggregator.
+
+=item B<batch>
+
+If enabled, when I<count> or I<duration> limit is reached, aggregator is reset
+and all events leaving it at once.
+
+=item B<start_time>
+
+Time when the first period should start. Used in conjunction with I<duration>
+and I<batch>. By default current model time.
+
+=item B<shift>
+
+Aggregate data with delay. Event enters aggregator only after specified by
+I<shift> number of events were added to the stream. Not compatible with
+I<duration>. By default 0.
+
 =item B<on_enter>
 
-Callback that should be invoked after event entered aggregator.
-Aggregator object is passed as the only argument to callback.
+Callback that should be invoked after event entered aggregator.  Aggregator
+object is passed as the only argument to callback.
 
 =item B<on_leave>
 
@@ -157,83 +181,33 @@ Aggregator object is passed as the only argument to callback.
 
 =back
 
-=head3 Events number based aggregators
-
-If aggregator has type B<count>, then it aggregates data for particular
-number of events and the following parameters are accepted:
-
-=over 4
-
-=item B<length>
-
-Aggregate data for the specified number of events. If aggregator already
-aggregates data for that many events, then one event should leave aggregator
-before another one can enter it. This parameter is required.
-
-=item B<shift>
-
-Aggregate data with delay. Event enters aggregator only after specified by
-I<shift> number of events were added to the stream. By default 0.
-
-=item B<batch>
-
-As soon as number of events specified by I<length> parameter is reached,
-aggregator is reset and all events leave it at once. By default not set.
-
-=back
-
-=head3 Time based aggregators
-
-If aggregator has type B<time>, then it aggregates data for the specified
-period of time and the following parameters are accepted:
-
-=over 4
-
-=item B<period>
-
-Aggregate data for the specified period of time. Each time I<set_time> is
-called, events that are older then the specified period are leaving aggregator. This option is required.
-
-=item B<batch>
-
-Each time I<period> has passed aggregator is reset and all events leave it at
-once. By default not set.
-
-=item B<start_time>
-
-Time when first period should start. By default current model time.
-
-=back
-
 =cut
 
 sub add_aggregator {
     my ( $self, $aggregator, %params ) = @_;
     $params{_obj} = $aggregator;
-    if ( $params{type} eq 'count' ) {
-        $params{shift} //= 0;
-        $params{_window} = Data::EventStream::Window->new(
-            shift      => $params{shift},
-            events     => $self->events,
-            start_time => $self->time,
-        );
-        if ( $params{shift} + $params{length} > $self->length ) {
-            $self->_set_length( $params{shift} + $params{length} );
+    $params{shift} //= 0;
+    $params{_window} = Data::EventStream::Window->new(
+        events     => $self->events,
+        shift      => $params{shift},
+        start_time => $params{start_time} // $self->time,
+    );
+
+    unless ( $params{count} or $params{duration} ) {
+        croak 'At least one of "count" or "duration" parameters must be provided';
+    }
+    if ( $params{count} ) {
+        if ( $params{shift} + $params{count} > $self->length ) {
+            $self->_set_length( $params{shift} + $params{count} );
         }
     }
-    elsif ( $params{type} eq 'time' ) {
+    if ( $params{duration} ) {
         croak "time_sub must be defined for using time aggregators"
           unless $self->time_sub;
-        $params{_window} = Data::EventStream::Window->new(
-            events     => $self->events,
-            start_time => $params{start_time} // $self->time,
-        );
-        if ( $params{period} > $self->time_length ) {
-            $self->_set_time_length( $params{period} );
+        croak '"shift" parameter is not compatible with "duration"' if $params{shift};
+        if ( $params{duration} > $self->time_length ) {
+            $self->_set_time_length( $params{duration} );
         }
-    }
-    else {
-        croak "Unknown aggregator type $params{type}";
     }
     $self->push_aggregator( \%params );
 }
@@ -253,14 +227,23 @@ sub add_event {
     my $gt = $self->time_sub;
     if ($gt) {
         $time = $gt->($event);
+
+        # TODO: maybe check time and set it if needed
     }
 
     for my $aggregator (@$as) {
-        if ( $aggregator->{type} eq 'count' ) {
-            if ( $aggregator->{_window}->count == $aggregator->{length} ) {
+        if ( $aggregator->{count} ) {
+            my $win = $aggregator->{_window};
+            if ( $win->count == $aggregator->{count} ) {
+
+                # TODO: review this condition
+                if ($gt) {
+                    $win->start_time( $gt->( $win->get_event(-1) ) );
+                    $aggregator->{_obj}->window_update($win);
+                }
                 $aggregator->{on_leave}->( $aggregator->{_obj} ) if $aggregator->{on_leave};
-                my $ev_out = $aggregator->{_window}->shift_event;
-                $aggregator->{_obj}->leave( $ev_out, $aggregator->{_window} );
+                my $ev_out = $win->shift_event;
+                $aggregator->{_obj}->leave( $ev_out, $win );
             }
         }
     }
@@ -268,20 +251,23 @@ sub add_event {
     $self->push_event($event);
 
     for my $aggregator (@$as) {
-        if ( $aggregator->{type} eq 'count' ) {
+        my $win = $aggregator->{_window};
+        if ( $aggregator->{count} ) {
             next if $ev_num < $aggregator->{shift};
-            my $ev_in = $aggregator->{_window}->push_event;
-            $aggregator->{_obj}->enter( $ev_in, $aggregator->{_window} );
+            my $ev_in = $win->push_event;
+            $aggregator->{_obj}->enter( $ev_in, $win );
             $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
-            if ( $aggregator->{batch} and $aggregator->{_window}->count == $aggregator->{length} ) {
+            if ( $aggregator->{batch} and $win->count == $aggregator->{count} ) {
                 $aggregator->{on_reset}->( $aggregator->{_obj} ) if $aggregator->{on_reset};
-                $aggregator->{_window}->reset_count;
-                $aggregator->{_obj}->reset( $aggregator->{_window} );
+
+                # TODO: update time limits too
+                $win->reset_count;
+                $aggregator->{_obj}->reset($win);
             }
         }
-        elsif ( $aggregator->{type} eq 'time' ) {
-            my $ev_in = $aggregator->{_window}->push_event;
-            $aggregator->{_obj}->enter( $ev_in, $aggregator->{_window} );
+        else {
+            my $ev_in = $win->push_event;
+            $aggregator->{_obj}->enter( $ev_in, $win );
             $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
         }
     }

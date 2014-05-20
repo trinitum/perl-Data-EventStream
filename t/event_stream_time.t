@@ -102,10 +102,10 @@ my $es = Data::EventStream->new(
 );
 
 my %params = (
-    t3 => { type => 'time', period => '3', },
-    t5 => { type => 'time', period => '5', },
-    b4 => { type => 'time', period => '4', batch => 1, },
-    b3 => { type => 'time', period => '3.5', batch => 1, start_time => 9.5, },
+    t3 => { duration => '3', },
+    t5 => { duration => '5', },
+    b4 => { duration => '4', batch => 1, },
+    b3 => { duration => '3.5', batch => 1, start_time => 9.5, },
 );
 
 my %average;
