@@ -227,9 +227,7 @@ sub add_event {
     my $gt = $self->time_sub;
     if ($gt) {
         $time = $gt->($event);
-        if ($time > $self->time) {
-            $self->set_time($time);
-        }
+        $self->set_time($time);
     }
 
     for my $aggregator (@$as) {
@@ -256,13 +254,15 @@ sub add_event {
         if ( $aggregator->{count} ) {
             next if $ev_num < $aggregator->{shift};
             my $ev_in = $win->push_event;
+            my $event_time = $gt ? $gt->($ev_in) : undef;
+            $win->end_time($event_time);
             $aggregator->{_obj}->enter( $ev_in, $win );
             $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
             if ( $aggregator->{batch} and $win->count == $aggregator->{count} ) {
                 $aggregator->{on_reset}->( $aggregator->{_obj} ) if $aggregator->{on_reset};
 
-                # TODO: update time limits too
                 $win->reset_count;
+                $win->start_time($event_time) if $event_time;
                 $aggregator->{_obj}->reset($win);
             }
         }
@@ -273,11 +273,14 @@ sub add_event {
         }
     }
 
-    if ( $self->count_events > $self->length ) {
+    my $time_limit = $self->time - $self->time_length;
+    while ( $self->count_events > $self->length ) {
         if ($gt) {
-            my $limit = $self->time - $self->time_length;
-            while ( $gt->( $self->events->[0] ) <= $limit ) {
+            if ( $gt->( $self->events->[0] ) <= $time_limit ) {
                 $self->shift_event;
+            }
+            else {
+                last;
             }
         }
         else {

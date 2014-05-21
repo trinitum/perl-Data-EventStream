@@ -145,6 +145,8 @@ for my $as ( keys %params ) {
     );
 }
 
+is $es->time_length, 5, "correct time_length for feed stream";
+
 my @events = (
     {
         time => 11.3,
