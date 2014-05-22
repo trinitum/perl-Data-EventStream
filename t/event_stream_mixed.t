@@ -3,85 +3,8 @@ use Test::FailWarnings;
 
 use Data::EventStream;
 
-{
-
-    package MaxMin;
-    use Moose;
-    with 'Data::EventStream::Aggregator';
-
-    has value_sub => (
-        is      => 'ro',
-        default => sub {
-            sub { $_[0]->{val} }
-        },
-    );
-
-    has max => ( is => 'ro', writer => '_set_max', default => 'NaN', );
-
-    has min => ( is => 'ro', writer => '_set_min', default => 'NaN', );
-
-    has since => ( is => 'ro', writer => '_set_since', default => 0, );
-
-    sub value {
-        my $self = shift;
-        return join ",", $self->min, $self->max, $self->since;
-    }
-
-    sub enter {
-        my ( $self, $event, $window ) = @_;
-        my $value = $self->value_sub->($event);
-        if ( $self->max ne 'NaN' ) {
-            if ( $value > $self->max ) {
-                $self->_set_max($value);
-            }
-            elsif ( $value < $self->min ) {
-                $self->_set_min($value);
-            }
-        }
-        else {
-            $self->_set_max($value);
-            $self->_set_min($value);
-            $self->_set_since( $window->start_time );
-        }
-    }
-
-    sub reset {
-        my ( $self, $window ) = @_;
-        $self->_set_max('NaN');
-        $self->_set_min('NaN');
-        $self->_set_since( $window->start_time );
-    }
-
-    sub leave {
-        my ( $self, $event, $window ) = @_;
-        my $value = $self->value_sub->($event);
-        $self->_set_since( $window->start_time );
-        if ( $window->count == 0 ) {
-            $self->_set_max('NaN');
-            $self->_set_min('NaN');
-        }
-        elsif ( $value >= $self->max or $value <= $self->min ) {
-            my $vs = $self->value_sub;
-            my $min = my $max = $vs->( $window->get_event(0) );
-            for ( 1 .. $window->count - 1 ) {
-                my $val = $vs->( $window->get_event($_) );
-                if ( $val < $min ) {
-                    $min = $val;
-                }
-                elsif ( $val > $max ) {
-                    $max = $val;
-                }
-            }
-            $self->_set_max($max);
-            $self->_set_min($min);
-        }
-    }
-
-    sub window_update {
-        my ( $self, $window ) = @_;
-        $self->_set_since( $window->start_time );
-    }
-}
+use lib 't/lib';
+use MaxMin;
 
 my $es = Data::EventStream->new( time => 1, time_sub => sub { $_[0]->{time} }, );
 
