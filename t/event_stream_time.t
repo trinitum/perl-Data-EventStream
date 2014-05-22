@@ -5,11 +5,7 @@ use Data::EventStream;
 
 use lib 't/lib';
 use TimeAverager;
-
-my $es = Data::EventStream->new(
-    time     => 8,
-    time_sub => sub { $_[0]->{time} },
-);
+use TestStream;
 
 my %params = (
     t3 => { duration => '3', },
@@ -17,45 +13,6 @@ my %params = (
     b4 => { duration => '4', batch => 1, },
     b3 => { duration => '3.5', batch => 1, start_time => 9.5, },
 );
-
-my %average;
-my %ins;
-my %outs;
-my %resets;
-
-sub store_observed_value {
-    my ( $hr, $key, $value ) = @_;
-    if ( defined $hr->{$key} ) {
-        if ( ref $hr->{$key} eq 'ARRAY' ) {
-            push @{ $hr->{$key} }, $value;
-        }
-        else {
-            $hr->{$key} = [ $hr->{$key}, $value, ];
-        }
-    }
-    else {
-        $hr->{$key} = $value;
-    }
-}
-
-for my $as ( keys %params ) {
-    $average{$as} = TimeAverager->new;
-    $es->add_aggregator(
-        $average{$as},
-        %{ $params{$as} },
-        on_enter => sub {
-            store_observed_value( \%ins, $as, $_[0]->value );
-        },
-        on_leave => sub {
-            store_observed_value( \%outs, $as, $_[0]->value );
-        },
-        on_reset => sub {
-            store_observed_value( \%resets, $as, $_[0]->value );
-        },
-    );
-}
-
-is $es->time_length, 5, "correct time_length for feed stream";
 
 my @events = (
     {
@@ -163,28 +120,13 @@ my @events = (
     },
 );
 
-my $i = 1;
-for my $ev (@events) {
-    subtest "event $i: time=$ev->{time}" . ( $ev->{val} ? " val=$ev->{val}" : "" ) => sub {
-        $es->set_time( $ev->{time} ) unless $ev->{val};
-        $es->add_event( { time => $ev->{time}, val => $ev->{val} } ) if $ev->{val};
-        eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
-        %ins = ();
-        eq_or_diff \%outs, $ev->{outs} // {}, "got expected outs";
-        %outs = ();
-        eq_or_diff \%resets, $ev->{resets} // {}, "got expected resets";
-        %resets = ();
-
-        if ( $ev->{vals} ) {
-            my %vals;
-            for ( keys %{ $ev->{vals} } ) {
-                $vals{$_} = $average{$_}->value;
-            }
-            eq_or_diff \%vals, $ev->{vals}, "aggregators have expected values";
-        }
-    };
-    $i++;
-    last if $ev->{stop};
-}
+TestStream->new(
+    aggregator_class     => 'TimeAverager',
+    aggregator_params    => \%params,
+    events               => \@events,
+    start_time           => 8,
+    time_sub             => sub { $_[0]->{time} },
+    expected_time_length => 5,
+)->run;
 
 done_testing;
