@@ -5,8 +5,7 @@ use Data::EventStream;
 
 use lib 't/lib';
 use Averager;
-
-my $es = Data::EventStream->new();
+use TestStream;
 
 my %params = (
     'c3' => { count => 3 },
@@ -15,21 +14,6 @@ my %params = (
     'd4' => { count => 4, batch => 1, shift => 2 },
     'd3' => { count => 3, shift => 2 },
 );
-
-my %average;
-my %ins;
-my %outs;
-my %resets;
-
-for my $as ( keys %params ) {
-    $average{$as} = Averager->new;
-    $es->add_aggregator(
-        $average{$as}, %{ $params{$as} },
-        on_enter => sub { $ins{$as}    = $_[0]->value; },
-        on_leave => sub { $outs{$as}   = $_[0]->value; },
-        on_reset => sub { $resets{$as} = $_[0]->value; },
-    );
-}
 
 my @events = (
     {
@@ -85,20 +69,11 @@ my @events = (
     },
 );
 
-my %exp_resets = ( b4 => [ 3.5, 4.75, ], );
-
-my $i = 1;
-for my $ev (@events) {
-    subtest "event $i: val=$ev->{val}" => sub {
-        $es->add_event( { val => $ev->{val} } );
-        eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
-        %ins = ();
-        eq_or_diff \%outs, $ev->{outs} // {}, "got expected outs";
-        %outs = ();
-        eq_or_diff \%resets, $ev->{resets} // {}, "got expected resets";
-        %resets = ();
-    };
-    $i++;
-}
+TestStream->new(
+    aggregator_class  => 'Averager',
+    aggregator_params => \%params,
+    events            => \@events,
+    expected_length   => 6,
+)->run;
 
 done_testing;

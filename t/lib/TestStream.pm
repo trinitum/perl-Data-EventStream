@@ -70,10 +70,14 @@ sub run {
 
     my $i = 1;
     for my $ev ( @{ $test->events } ) {
-        subtest "event $i: time=$ev->{time}" . ( $ev->{val} ? " val=$ev->{val}" : "" ) => sub {
+        my $title =
+            "event $i: "
+          . ( defined $ev->{time} ? "time=$ev->{time} " : "" )
+          . ( defined $ev->{val}  ? " val=$ev->{val}"   : "" );
+        subtest $title => sub {
             $DB::single = 1 if $ev->{debug};
-            $es->set_time( $ev->{time} ) unless $ev->{val};
-            $es->add_event( { time => $ev->{time}, val => $ev->{val} } ) if $ev->{val};
+            $es->set_time( $ev->{time} ) if $ev->{time} and not defined $ev->{val};
+            $es->add_event( { time => $ev->{time}, val => $ev->{val} } ) if defined $ev->{val};
             eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
             %ins = ();
             eq_or_diff \%outs, $ev->{outs} // {}, "got expected outs";
