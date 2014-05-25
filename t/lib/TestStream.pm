@@ -17,6 +17,8 @@ has expected_time_length => ( is => 'ro' );
 
 has expected_length => ( is => 'ro' );
 
+has no_callbacks => ( is => 'ro', default => 0, );
+
 sub _store_observed_value {
     my ( $hr, $key, $value ) = @_;
     if ( defined $hr->{$key} ) {
@@ -50,15 +52,19 @@ sub run {
         $es->add_aggregator(
             $aggregator{$as},
             %{ $test->aggregator_params->{$as} },
-            on_enter => sub {
-                _store_observed_value( \%ins, $as, $_[0]->value );
-            },
-            on_leave => sub {
-                _store_observed_value( \%outs, $as, $_[0]->value );
-            },
-            on_reset => sub {
-                _store_observed_value( \%resets, $as, $_[0]->value );
-            },
+            (
+                $test->no_callbacks ? () : (
+                    on_enter => sub {
+                        _store_observed_value( \%ins, $as, $_[0]->value );
+                    },
+                    on_leave => sub {
+                        _store_observed_value( \%outs, $as, $_[0]->value );
+                    },
+                    on_reset => sub {
+                        _store_observed_value( \%resets, $as, $_[0]->value );
+                    },
+                )
+            ),
         );
     }
     if ( defined $test->expected_time_length ) {
@@ -78,12 +84,14 @@ sub run {
             $DB::single = 1 if $ev->{debug};
             $es->set_time( $ev->{time} ) if $ev->{time} and not defined $ev->{val};
             $es->add_event( { time => $ev->{time}, val => $ev->{val} } ) if defined $ev->{val};
-            eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
-            %ins = ();
-            eq_or_diff \%outs, $ev->{outs} // {}, "got expected outs";
-            %outs = ();
-            eq_or_diff \%resets, $ev->{resets} // {}, "got expected resets";
-            %resets = ();
+            unless ( $test->no_callbacks ) {
+                eq_or_diff \%ins, $ev->{ins} // {}, "got expected ins";
+                %ins = ();
+                eq_or_diff \%outs, $ev->{outs} // {}, "got expected outs";
+                %outs = ();
+                eq_or_diff \%resets, $ev->{resets} // {}, "got expected resets";
+                %resets = ();
+            }
 
             if ( $ev->{vals} ) {
                 my %vals;
@@ -91,6 +99,19 @@ sub run {
                     $vals{$_} = $aggregator{$_}->value;
                 }
                 eq_or_diff \%vals, $ev->{vals}, "aggregators have expected values";
+            }
+
+            if ( $ev->{methods} ) {
+                my %methods;
+                for my $agg ( keys %{ $ev->{methods} } ) {
+                    my $res = {};
+                    for my $meth ( keys %{ $ev->{methods}{$_} } ) {
+                        $res->{$meth} = $aggregator{$agg}->$meth;
+                    }
+                    $methods{$agg} = $res;
+                }
+                eq_or_diff \%methods, $ev->{methods},
+                  "aggregators methods returned expected values";
             }
         };
         $i++;
