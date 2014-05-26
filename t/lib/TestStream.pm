@@ -5,6 +5,8 @@ use Test::Most;
 
 has aggregator_class => ( is => 'ro', required => 1 );
 
+has new_params => ( is => 'ro', default => sub { {} } );
+
 has aggregator_params => ( is => 'ro', isa => 'HashRef', required => 1 );
 
 has events => ( is => 'ro', isa => 'ArrayRef', required => 1 );
@@ -48,7 +50,7 @@ sub run {
     my %resets;
 
     for my $as ( keys %{ $test->aggregator_params } ) {
-        $aggregator{$as} = $test->aggregator_class->new;
+        $aggregator{$as} = $test->aggregator_class->new( $test->new_params );
         $es->add_aggregator(
             $aggregator{$as},
             %{ $test->aggregator_params->{$as} },
@@ -102,16 +104,13 @@ sub run {
             }
 
             if ( $ev->{methods} ) {
-                my %methods;
                 for my $agg ( keys %{ $ev->{methods} } ) {
-                    my $res = {};
-                    for my $meth ( keys %{ $ev->{methods}{$_} } ) {
-                        $res->{$meth} = $aggregator{$agg}->$meth;
-                    }
-                    $methods{$agg} = $res;
+                    cmp_deeply(
+                        $aggregator{$agg},
+                        methods( %{ $ev->{methods}{$agg} } ),
+                        "expected values returned by methods on $agg"
+                      )
                 }
-                eq_or_diff \%methods, $ev->{methods},
-                  "aggregators methods returned expected values";
             }
         };
         $i++;
