@@ -1,15 +1,15 @@
-package Data::EventStream::Statistics::Sample;
+package Data::EventStream::Aggregator::Statistics;
 use 5.010;
 use Moose;
 
 =head1 NAME
 
-Data::EventStream::Statistics::Sample - basic statistical functions for the sample
+Data::EventStream::Aggregator::Statistics - basic statistical functions for the sample
 
 =head1 SYNOPSIS
 
-    use Data::EventStream::Statistics::Sample;
-    my $stat = Data::EventStream::Statistics::Sample->new(
+    use Data::EventStream::Aggregator::Statistics;
+    my $stat = Data::EventStream::Aggregator::Statistics->new(
         value_sub => \&event_value,
     );
     $ev_stream->add_aggregator($stat, %params);
