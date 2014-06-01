@@ -90,11 +90,11 @@ sub set_time {
     croak "time_sub must be defined if you using time aggregators" unless $gt;
 
     for my $aggregator ( @{ $self->aggregators } ) {
+        my $win = $aggregator->{_window};
+        my $obj = $aggregator->{_obj};
         if ( $aggregator->{duration} ) {
-            my $win = $aggregator->{_window};
             next if $win->start_time > $time;
             my $period = $aggregator->{duration};
-            my $obj    = $aggregator->{_obj};
             if ( $aggregator->{batch} ) {
                 while ( $time - $win->start_time >= $period ) {
                     $win->end_time( $win->start_time + $period );
@@ -119,6 +119,10 @@ sub set_time {
                     $win->start_time($st);
                 }
             }
+            $obj->window_update($win);
+        }
+        else {
+            $win->end_time($time);
             $obj->window_update($win);
         }
     }
@@ -242,6 +246,14 @@ sub add_event {
                 }
                 $aggregator->{on_leave}->( $aggregator->{_obj} ) if $aggregator->{on_leave};
                 my $ev_out = $win->shift_event;
+                if ($gt) {
+                    if ( $win->count ) {
+                        $win->start_time( $gt->( $win->get_event(-1) ) );
+                    }
+                    else {
+                        $win->start_time($time);
+                    }
+                }
                 $aggregator->{_obj}->leave( $ev_out, $win );
             }
         }
@@ -254,8 +266,12 @@ sub add_event {
         if ( $aggregator->{count} ) {
             next if $ev_num < $aggregator->{shift};
             my $ev_in = $win->push_event;
-            my $event_time = $gt ? $gt->($ev_in) : undef;
-            $win->end_time($event_time);
+            my $event_time;
+            if ($gt) {
+                $event_time = $gt->($ev_in);
+                $win->end_time($event_time);
+                $win->start_time($event_time) if $win->count == 1
+            }
             $aggregator->{_obj}->enter( $ev_in, $win );
             $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
             if ( $aggregator->{batch} and $win->count == $aggregator->{count} ) {
@@ -288,6 +304,10 @@ sub add_event {
         }
     }
 }
+
+no Moose;
+
+__PACKAGE__->meta->make_immutable;
 
 1;
 
