@@ -97,7 +97,7 @@ sub get_event {
 =head2 $self->get_iterator
 
 Returns callable iterator object. Each time you call it, it returns the next
-event starting from the oldest one. For example:
+event starting from the latest one. For example:
 
     my $next_event = $win->get_iterator;
     while ( my $event = $next_event->() ) {
