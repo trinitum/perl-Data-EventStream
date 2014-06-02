@@ -54,10 +54,11 @@ sub leave {
         $self->_set_min('NaN');
     }
     elsif ( $value >= $self->max or $value <= $self->min ) {
-        my $vs = $self->value_sub;
-        my $min = my $max = $vs->( $window->get_event(0) );
-        for ( 1 .. $window->count - 1 ) {
-            my $val = $vs->( $window->get_event($_) );
+        my $vs   = $self->value_sub;
+        my $min  = my $max = $vs->( $window->get_event(0) );
+        my $next_event = $window->get_iterator;
+        while ( my $event = $next_event->() ) {
+            my $val = $vs->($event);
             if ( $val < $min ) {
                 $min = $val;
             }
