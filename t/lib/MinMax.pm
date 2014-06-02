@@ -1,4 +1,4 @@
-package MaxMin;
+package MinMax;
 use Moose;
 with 'Data::EventStream::Aggregator';
 
@@ -74,6 +74,8 @@ sub window_update {
     my ( $self, $window ) = @_;
     $self->_set_since( $window->start_time );
 }
+
+no Moose;
 
 __PACKAGE__->meta->make_immutable;
 
