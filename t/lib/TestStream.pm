@@ -112,6 +112,14 @@ sub run {
                       )
                 }
             }
+
+            if ( $ev->{stream} ) {
+                cmp_deeply(
+                    $es,
+                    methods( %{ $ev->{stream} } ),
+                    "event_stream methods return expected values"
+                );
+            }
         };
         $i++;
         last if $ev->{stop};
