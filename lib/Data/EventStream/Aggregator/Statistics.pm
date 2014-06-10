@@ -1,10 +1,16 @@
 package Data::EventStream::Aggregator::Statistics;
 use 5.010;
 use Moose;
+our $VERSION = "0.06";
+$VERSION = eval $VERSION;
 
 =head1 NAME
 
 Data::EventStream::Aggregator::Statistics - basic statistical functions for the sample
+
+=head1 VERSION
+
+This document describes Data::EventStream::Aggregator::Statistics version 0.06
 
 =head1 SYNOPSIS
 

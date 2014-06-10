@@ -1,3 +1,10 @@
+0.06 Wed Jun 11 2014 Pavel Shaydo <zwon@cpan.org>
+    - add aggregators for calculation of sample based and time weighted statistics
+    - add get_iterator method to Window
+    - add next_leave method to EventStream
+    - refactor tests
+    - add simple benchmarking script
+
 0.05 Thu May 22 2014 Pavel Shaydo <zwon@cpan.org>
     - remove type parameter from aggregators
     - automatically update model time when event added
