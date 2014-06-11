@@ -91,10 +91,15 @@ sub set_time {
     my $gt = $self->time_sub;
     croak "time_sub must be defined if you using time aggregators" unless $gt;
 
+    my $as = $self->aggregators;
     my $next_leave = $time + $self->time_length;
-    for my $aggregator ( @{ $self->aggregators } ) {
-        my $win = $aggregator->{_window};
-        my $obj = $aggregator->{_obj};
+    my @deleted;
+
+  AGGREGATOR:
+    for my $n ( 0 .. $#$as ) {
+        my $aggregator = $as->[$n];
+        my $win        = $aggregator->{_window};
+        my $obj        = $aggregator->{_obj};
         if ( $aggregator->{duration} ) {
             next if $win->start_time > $time;
             my $period = $aggregator->{duration};
@@ -106,6 +111,10 @@ sub set_time {
                     $win->start_time( $win->end_time );
                     $win->reset_count;
                     $obj->reset($win);
+                    if ( $aggregator->{disposable} ) {
+                        push @deleted, $n;
+                        next AGGREGATOR;
+                    }
                 }
                 $win->end_time($time);
                 my $nl = $win->start_time + $period;
@@ -135,6 +144,9 @@ sub set_time {
             $win->end_time($time);
             $obj->window_update($win);
         }
+    }
+    while ( my $n = pop @deleted ) {
+        splice @$as, $n, 1;
     }
     $self->_next_leave($next_leave);
 
@@ -282,8 +294,12 @@ sub add_event {
     $self->push_event($event);
 
     my $next_leave = $self->_next_leave;
-    for my $aggregator (@$as) {
-        my $win = $aggregator->{_window};
+    my @deleted;
+
+  AGGREGATOR:
+    for my $n ( 0 .. $#$as ) {
+        my $aggregator = $as->[$n];
+        my $win        = $aggregator->{_window};
         if ( $aggregator->{count} ) {
             next if $ev_num < $aggregator->{shift};
             my $ev_in = $win->push_event;
@@ -301,6 +317,10 @@ sub add_event {
                 $win->reset_count;
                 $win->start_time($event_time) if $event_time;
                 $aggregator->{_obj}->reset($win);
+                if ( $aggregator->{disposable} ) {
+                    push @deleted, $n;
+                    next AGGREGATOR;
+                }
             }
         }
         else {
@@ -312,6 +332,9 @@ sub add_event {
             my $nl = $gt->( $win->get_event(-1) ) + $aggregator->{duration};
             $next_leave = $nl if $nl < $next_leave;
         }
+    }
+    while ( my $n = pop @deleted ) {
+        splice @$as, $n, 1;
     }
     $self->_next_leave($next_leave);
 
