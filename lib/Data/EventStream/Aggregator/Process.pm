@@ -7,7 +7,7 @@ Data::EventStream::Aggregator::Process - calculate basic parameters of process
 
 =head1 VERSION
 
-This document describes Data::EventStream::Aggregator::Process version 0.06
+This document describes Data::EventStream::Aggregator::Process version 0.07
 
 =head1 SYNOPSIS
 
