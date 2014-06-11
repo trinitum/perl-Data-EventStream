@@ -176,7 +176,7 @@ my @events = (
             },
             lengw => {
                 count    => 4,
-                mean     => 15.555555555555555,
+                mean     => num( 15.555555555, 0.000001 ),
                 integral => 140,
                 interval => 9,
                 change   => 8,
