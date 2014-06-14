@@ -195,6 +195,11 @@ and all events leaving it at once.
 Time when the first period should start. Used in conjunction with I<duration>
 and I<batch>. By default current model time.
 
+=item B<disposable>
+
+Used in conjunction with I<batch>. Aggregator only aggregates specified period
+once and on reset it is removed from the list of aggregators.
+
 =item B<shift>
 
 Aggregate data with delay. Event enters aggregator only after specified by
