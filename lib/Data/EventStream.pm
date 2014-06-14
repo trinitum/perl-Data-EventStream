@@ -91,7 +91,7 @@ sub set_time {
     my $gt = $self->time_sub;
     croak "time_sub must be defined if you using time aggregators" unless $gt;
 
-    my $as = $self->aggregators;
+    my $as         = $self->aggregators;
     my $next_leave = $time + $self->time_length;
     my @deleted;
 
@@ -200,12 +200,6 @@ and I<batch>. By default current model time.
 Used in conjunction with I<batch>. Aggregator only aggregates specified period
 once and on reset it is removed from the list of aggregators.
 
-=item B<shift>
-
-Aggregate data with delay. Event enters aggregator only after specified by
-I<shift> number of events were added to the stream. Not compatible with
-I<duration>. By default 0.
-
 =item B<on_enter>
 
 Callback that should be invoked after event entered aggregator.  Aggregator
@@ -227,11 +221,9 @@ Aggregator object is passed as the only argument to callback.
 
 sub add_aggregator {
     my ( $self, $aggregator, %params ) = @_;
-    $params{_obj} = $aggregator;
-    $params{shift} //= 0;
+    $params{_obj}    = $aggregator;
     $params{_window} = Data::EventStream::Window->new(
         events     => $self->events,
-        shift      => $params{shift},
         start_time => $params{start_time} // $self->time,
     );
 
@@ -239,14 +231,13 @@ sub add_aggregator {
         croak 'At least one of "count" or "duration" parameters must be provided';
     }
     if ( $params{count} ) {
-        if ( $params{shift} + $params{count} > $self->length ) {
-            $self->_set_length( $params{shift} + $params{count} );
+        if ( $params{count} > $self->length ) {
+            $self->_set_length( $params{count} );
         }
     }
     if ( $params{duration} ) {
         croak "time_sub must be defined for using time aggregators"
           unless $self->time_sub;
-        croak '"shift" parameter is not compatible with "duration"' if $params{shift};
         if ( $params{duration} > $self->time_length ) {
             $self->_set_time_length( $params{duration} );
         }
@@ -306,7 +297,6 @@ sub add_event {
         my $aggregator = $as->[$n];
         my $win        = $aggregator->{_window};
         if ( $aggregator->{count} ) {
-            next if $ev_num < $aggregator->{shift};
             my $ev_in = $win->push_event;
             my $event_time;
             if ($gt) {
