@@ -1,5 +1,7 @@
 package Data::EventStream::Aggregator::Process;
 use Moose;
+our $VERSION = "0.08";
+$VERSION = eval $VERSION;
 
 =head1 NAME
 
@@ -7,7 +9,7 @@ Data::EventStream::Aggregator::Process - calculate basic parameters of process
 
 =head1 VERSION
 
-This document describes Data::EventStream::Aggregator::Process version 0.07
+This document describes Data::EventStream::Aggregator::Process version 0.08
 
 =head1 SYNOPSIS
 

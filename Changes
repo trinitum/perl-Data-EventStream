@@ -1,3 +1,7 @@
+0.08 Sun Jun 15 2014 Pavel Shaydo <zwon@cpan.org>
+    - remove shift option for aggregators
+    - add disposable aggregators
+
 0.07 Wed Jun 11 2014 Pavel Shaydo <zwon@cpan.org>
     - fix failing test
 
