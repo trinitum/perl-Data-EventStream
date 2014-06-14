@@ -49,25 +49,29 @@ sub run {
     my %outs;
     my %resets;
 
-    for my $as ( keys %{ $test->aggregator_params } ) {
-        $aggregator{$as} = $test->aggregator_class->new( $test->new_params );
+    my $add_aggregator = sub {
+        my ( $name, $agg_params ) = @_;
+        $aggregator{$name} = $test->aggregator_class->new( $test->new_params );
         $es->add_aggregator(
-            $aggregator{$as},
-            %{ $test->aggregator_params->{$as} },
+            $aggregator{$name},
+            %$agg_params,
             (
                 $test->no_callbacks ? () : (
                     on_enter => sub {
-                        _store_observed_value( \%ins, $as, $_[0]->value );
+                        _store_observed_value( \%ins, $name, $_[0]->value );
                     },
                     on_leave => sub {
-                        _store_observed_value( \%outs, $as, $_[0]->value );
+                        _store_observed_value( \%outs, $name, $_[0]->value );
                     },
                     on_reset => sub {
-                        _store_observed_value( \%resets, $as, $_[0]->value );
+                        _store_observed_value( \%resets, $name, $_[0]->value );
                     },
                 )
             ),
         );
+    };
+    for my $as ( keys %{ $test->aggregator_params } ) {
+        $add_aggregator->( $as, $test->aggregator_params->{$as} );
     }
     if ( defined $test->expected_time_length ) {
         is $es->time_length, $test->expected_time_length, "correct time length for event stream";
@@ -119,6 +123,12 @@ sub run {
                     methods( %{ $ev->{stream} } ),
                     "event_stream methods return expected values"
                 );
+            }
+
+            if ( $ev->{add_aggregator} ) {
+                for my $name ( keys %{ $ev->{add_aggregator} } ) {
+                    $add_aggregator->( $name, $ev->{add_aggregator}{$name} );
+                }
             }
         };
         $i++;

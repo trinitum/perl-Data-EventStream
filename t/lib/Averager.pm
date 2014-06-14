@@ -31,7 +31,7 @@ has _count => (
 
 sub value {
     my $self = shift;
-    return $self->_count ? $self->_sum / $self->_count : 'NaN';
+    return $self->_count ? sprintf( "%.6g", $self->_sum / $self->_count ) : 'NaN';
 }
 
 sub enter {
