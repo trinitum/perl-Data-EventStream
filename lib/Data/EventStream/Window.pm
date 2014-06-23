@@ -84,8 +84,8 @@ sub time_length {
 
 =head2 $self->get_event($idx)
 
-Returns event with the specified index. 0 being the latest, most recent event,
-and -1 being the oldest event.
+Returns event with the specified index. 0 being the oldest, and -1 being the
+latest, most recent, event.
 
 =cut
 
@@ -94,17 +94,17 @@ sub get_event {
     my $count = $self->{count};
     return if $idx >= $count or $idx < -$count;
     if ( $idx >= 0 ) {
-        return $self->{events}[ -( $idx + 1 ) ];
+        return $self->{events}[ -( $count + $idx ) ];
     }
     else {
-        return $self->{events}[ -( $count + $idx + 1 ) ];
+        return $self->{events}[$idx];
     }
 }
 
 =head2 $self->get_iterator
 
 Returns callable iterator object. Each time you call it, it returns the next
-event starting from the latest one. For example:
+event starting from the oldest one. For example:
 
     my $next_event = $win->get_iterator;
     while ( my $event = $next_event->() ) {
@@ -115,12 +115,11 @@ event starting from the latest one. For example:
 
 sub get_iterator {
     my $self   = shift;
-    my $idx    = 0;
+    my $idx    = -$self->{count};
     my $events = $self->{events};
-    my $count  = $self->{count};
     return sub {
-        return if $idx++ >= $count;
-        return $events->[ -($idx) ];
+        return unless $idx < 0;
+        return $events->[ $idx++ ];
     };
 }
 

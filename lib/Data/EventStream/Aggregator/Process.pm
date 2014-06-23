@@ -134,7 +134,7 @@ sub leave {
     my $start    = $self->_start_pos;
     my $integral = $self->_integral - ( $window->start_time - $time ) * $val;
     $self->_integral($integral);
-    my $start_ev = $window->get_event(-1);
+    my $start_ev = $window->get_event(0);
     if ( $start_ev and $self->time_sub->($start_ev) == $window->start_time ) {
         $val = $self->value_sub->($start_ev);
     }

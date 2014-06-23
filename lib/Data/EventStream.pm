@@ -125,7 +125,7 @@ sub set_time {
                 if ( $win->time_length >= $period ) {
                     my $st = $time - $period;
                     while ( $win->{count}
-                        and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st )
+                        and ( my $ev_time = $gt->( $win->get_event(0) ) ) <= $st )
                     {
                         $win->{start_time} = $ev_time;
                         $obj->window_update($win);
@@ -135,7 +135,7 @@ sub set_time {
                     $win->{start_time} = $st;
                 }
                 if ( $win->{count} ) {
-                    my $nl = $gt->( $win->get_event(-1) ) + $period;
+                    my $nl = $gt->( $win->get_event(0) ) + $period;
                     $next_leave = $nl if $nl < $next_leave;
                 }
             }
@@ -270,14 +270,14 @@ sub add_event {
             if ( $win->{count} == $aggregator->{count} ) {
 
                 if ($gt) {
-                    $win->{start_time} = $gt->( $win->get_event(-1) );
+                    $win->{start_time} = $gt->( $win->get_event(0) );
                     $aggregator->{_obj}->window_update($win);
                 }
                 $aggregator->{on_leave}->( $aggregator->{_obj} ) if $aggregator->{on_leave};
                 my $ev_out = $win->_shift_event;
                 if ($gt) {
                     if ( $win->{count} ) {
-                        $win->{start_time} = $gt->( $win->get_event(-1) );
+                        $win->{start_time} = $gt->( $win->get_event(0) );
                     }
                     else {
                         $win->{start_time} = $time;
@@ -325,7 +325,7 @@ sub add_event {
             $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
         }
         if ( $aggregator->{duration} and $win->{count} ) {
-            my $nl = $gt->( $win->get_event(-1) ) + $aggregator->{duration};
+            my $nl = $gt->( $win->get_event(0) ) + $aggregator->{duration};
             $next_leave = $nl if $nl < $next_leave;
         }
     }
