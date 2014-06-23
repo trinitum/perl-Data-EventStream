@@ -1,8 +1,8 @@
 package Data::EventStream::Window;
 use 5.010;
-use Moose;
 our $VERSION = "0.08";
 $VERSION = eval $VERSION;
+use Carp;
 
 =head1 NAME
 
@@ -21,24 +21,29 @@ Normally window objects are passed to aggregators' callbacks and user has no nee
 
 =cut
 
+=head2 $class->new
+
+Create a new Window object. L<Data::EventStream> will do it for you.
+
+=cut
+
+sub new {
+    my $class = shift;
+    my $self  = {@_};
+    $self->{count} //= 0;
+    croak "events parameter is required" unless $self->{events};
+    $self->{start_time} //= 0;
+    $self->{end_time}   //= 0;
+    return bless $self, $class;
+}
+
 =head2 $self->count
 
 Number of events in the window
 
 =cut
 
-has count => (
-    is      => 'rw',
-    default => 0,
-    traits  => ['Counter'],
-    handles => {
-        inc_count   => 'inc',
-        dec_count   => 'dec',
-        reset_count => 'reset',
-    },
-);
-
-has events => ( is => 'ro', required => 1, );
+sub count { shift->{count} }
 
 =head2 $self->start_time
 
@@ -46,7 +51,7 @@ Window start time
 
 =cut
 
-has start_time => ( is => 'rw', default => 0, );
+sub start_time { shift->{start_time} }
 
 =head2 $self->end_time
 
@@ -54,7 +59,17 @@ Window end time
 
 =cut
 
-has end_time => ( is => 'rw', default => 0, );
+sub end_time { shift->{end_time} }
+
+=head2 $self->reset_count
+
+Set number of events in window to 0
+
+=cut
+
+sub reset_count {
+    shift->{count} = 0;
+}
 
 =head2 $self->time_length
 
@@ -64,7 +79,7 @@ Window length in time
 
 sub time_length {
     my $self = shift;
-    return $self->end_time - $self->start_time;
+    return $self->{end_time} - $self->{start_time};
 }
 
 =head2 $self->get_event($idx)
@@ -76,13 +91,13 @@ and -1 being the oldest event.
 
 sub get_event {
     my ( $self, $idx ) = @_;
-    my $count = $self->count;
+    my $count = $self->{count};
     return if $idx >= $count or $idx < -$count;
     if ( $idx >= 0 ) {
-        return $self->events->[ -( $idx + 1 ) ];
+        return $self->{events}[ -( $idx + 1 ) ];
     }
     else {
-        return $self->events->[ -( $count + $idx + 1 ) ];
+        return $self->{events}[ -( $count + $idx + 1 ) ];
     }
 }
 
@@ -101,28 +116,24 @@ event starting from the latest one. For example:
 sub get_iterator {
     my $self   = shift;
     my $idx    = 0;
-    my $events = $self->events;
-    my $count  = $self->count;
+    my $events = $self->{events};
+    my $count  = $self->{count};
     return sub {
         return if $idx++ >= $count;
         return $events->[ -($idx) ];
     };
 }
 
-sub shift_event {
+sub _shift_event {
     my ($self) = @_;
-    $self->dec_count;
-    return $self->events->[ -( $self->count + 1 ) ];
+    $self->{count}--;
+    return $self->{events}[ -( $self->count + 1 ) ];
 }
 
-sub push_event {
+sub _push_event {
     my ($self) = @_;
-    $self->inc_count;
-    return $self->events->[ -(1) ];
+    $self->{count}++;
+    return $self->{events}[ -(1) ];
 }
-
-no Moose;
-
-__PACKAGE__->meta->make_immutable;
 
 1;

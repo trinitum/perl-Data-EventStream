@@ -101,39 +101,40 @@ sub set_time {
         my $win        = $aggregator->{_window};
         my $obj        = $aggregator->{_obj};
         if ( $aggregator->{duration} ) {
-            next if $win->start_time > $time;
+            next if $win->{start_time} > $time;
             my $period = $aggregator->{duration};
             if ( $aggregator->{batch} ) {
-                while ( $time - $win->start_time >= $period ) {
-                    $win->end_time( $win->start_time + $period );
+                while ( $time - $win->{start_time} >= $period ) {
+                    $win->{end_time} = $win->{start_time} + $period;
                     $obj->window_update($win);
                     $aggregator->{on_reset}->($obj) if $aggregator->{on_reset};
-                    $win->start_time( $win->end_time );
-                    $win->reset_count;
+                    $win->{start_time} = $win->{end_time};
+                    $win->{count}      = 0;
                     $obj->reset($win);
                     if ( $aggregator->{disposable} ) {
                         push @deleted, $n;
                         next AGGREGATOR;
                     }
                 }
-                $win->end_time($time);
-                my $nl = $win->start_time + $period;
+                $win->{end_time} = $time;
+                my $nl = $win->{start_time} + $period;
                 $next_leave = $nl if $nl < $next_leave;
             }
             else {
-                $win->end_time($time);
+                $win->{end_time} = $time;
                 if ( $win->time_length >= $period ) {
                     my $st = $time - $period;
-                    while ( $win->count and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st )
+                    while ( $win->{count}
+                        and ( my $ev_time = $gt->( $win->get_event(-1) ) ) <= $st )
                     {
-                        $win->start_time($ev_time);
+                        $win->{start_time} = $ev_time;
                         $obj->window_update($win);
                         $aggregator->{on_leave}->($obj) if $aggregator->{on_leave};
-                        $obj->leave( $win->shift_event, $win );
+                        $obj->leave( $win->_shift_event, $win );
                     }
-                    $win->start_time($st);
+                    $win->{start_time} = $st;
                 }
-                if ( $win->count ) {
+                if ( $win->{count} ) {
                     my $nl = $gt->( $win->get_event(-1) ) + $period;
                     $next_leave = $nl if $nl < $next_leave;
                 }
@@ -141,7 +142,7 @@ sub set_time {
             $obj->window_update($win);
         }
         else {
-            $win->end_time($time);
+            $win->{end_time} = $time;
             $obj->window_update($win);
         }
     }
@@ -266,20 +267,20 @@ sub add_event {
     for my $aggregator (@$as) {
         if ( $aggregator->{count} ) {
             my $win = $aggregator->{_window};
-            if ( $win->count == $aggregator->{count} ) {
+            if ( $win->{count} == $aggregator->{count} ) {
 
                 if ($gt) {
-                    $win->start_time( $gt->( $win->get_event(-1) ) );
+                    $win->{start_time} = $gt->( $win->get_event(-1) );
                     $aggregator->{_obj}->window_update($win);
                 }
                 $aggregator->{on_leave}->( $aggregator->{_obj} ) if $aggregator->{on_leave};
-                my $ev_out = $win->shift_event;
+                my $ev_out = $win->_shift_event;
                 if ($gt) {
-                    if ( $win->count ) {
-                        $win->start_time( $gt->( $win->get_event(-1) ) );
+                    if ( $win->{count} ) {
+                        $win->{start_time} = $gt->( $win->get_event(-1) );
                     }
                     else {
-                        $win->start_time($time);
+                        $win->{start_time} = $time;
                     }
                 }
                 $aggregator->{_obj}->leave( $ev_out, $win );
@@ -297,20 +298,20 @@ sub add_event {
         my $aggregator = $as->[$n];
         my $win        = $aggregator->{_window};
         if ( $aggregator->{count} ) {
-            my $ev_in = $win->push_event;
+            my $ev_in = $win->_push_event;
             my $event_time;
             if ($gt) {
                 $event_time = $gt->($ev_in);
-                $win->end_time($event_time);
-                $win->start_time($event_time) if $win->count == 1
+                $win->{end_time} = $event_time;
+                $win->{start_time} = $event_time if $win->{count} == 1
             }
             $aggregator->{_obj}->enter( $ev_in, $win );
             $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
-            if ( $aggregator->{batch} and $win->count == $aggregator->{count} ) {
+            if ( $aggregator->{batch} and $win->{count} == $aggregator->{count} ) {
                 $aggregator->{on_reset}->( $aggregator->{_obj} ) if $aggregator->{on_reset};
 
-                $win->reset_count;
-                $win->start_time($event_time) if $event_time;
+                $win->{count} = 0;
+                $win->{start_time} = $event_time if $event_time;
                 $aggregator->{_obj}->reset($win);
                 if ( $aggregator->{disposable} ) {
                     push @deleted, $n;
@@ -319,11 +320,11 @@ sub add_event {
             }
         }
         else {
-            my $ev_in = $win->push_event;
+            my $ev_in = $win->_push_event;
             $aggregator->{_obj}->enter( $ev_in, $win );
             $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
         }
-        if ( $aggregator->{duration} and $win->count ) {
+        if ( $aggregator->{duration} and $win->{count} ) {
             my $nl = $gt->( $win->get_event(-1) ) + $aggregator->{duration};
             $next_leave = $nl if $nl < $next_leave;
         }
