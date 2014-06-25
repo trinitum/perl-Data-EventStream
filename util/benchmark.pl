@@ -4,7 +4,7 @@ use warnings;
 
 use Data::EventStream;
 use Data::EventStream::Statistics::Discrete;
-use Data::EventStream::Aggregator::Process;
+use Data::EventStream::Statistics::Continuous;
 use Math::Random qw(random_exponential random_normal);
 use Time::HiRes;
 
@@ -15,7 +15,7 @@ my $es = Data::EventStream->new(
 
 my $stat = Data::EventStream::Statistics::Discrete->new( value_sub => sub { $_[0]->{val}; }, );
 $es->add_aggregator( $stat, count => 100 );
-my $proc = Data::EventStream::Aggregator::Process->new(
+my $proc = Data::EventStream::Statistics::Continuous->new(
     time_sub  => sub { $_[0]->{time}; },
     value_sub => sub { $_[0]->{val}; },
 );

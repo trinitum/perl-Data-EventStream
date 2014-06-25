@@ -1,20 +1,20 @@
-package Data::EventStream::Aggregator::Process;
+package Data::EventStream::Statistics::Continuous;
 use Moose;
 our $VERSION = "0.08";
 $VERSION = eval $VERSION;
 
 =head1 NAME
 
-Data::EventStream::Aggregator::Process - calculate basic parameters of process
+Data::EventStream::Statistics::Continuous - calculate basic parameters of process
 
 =head1 VERSION
 
-This document describes Data::EventStream::Aggregator::Process version 0.08
+This document describes Data::EventStream::Statistics::Continuous version 0.08
 
 =head1 SYNOPSIS
 
-    use Data::EventStream::Aggregator::Process;
-    my $stat = Data::EventStream::Aggregator::Process->new(
+    use Data::EventStream::Statistics::Continuous;
+    my $stat = Data::EventStream::Statistics::Continuous->new(
         value_sub => \&event_value,
         time_sub  => \&event_time,
     );
