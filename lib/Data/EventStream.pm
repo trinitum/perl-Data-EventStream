@@ -1,7 +1,7 @@
 package Data::EventStream;
 use 5.010;
 use Moose;
-our $VERSION = "0.08";
+our $VERSION = "0.09";
 $VERSION = eval $VERSION;
 use Carp;
 use Data::EventStream::Window;
@@ -12,16 +12,13 @@ Data::EventStream - Perl extension for event processing
 
 =head1 VERSION
 
-This document describes Data::EventStream version 0.08
+This document describes Data::EventStream version 0.09
 
 =head1 SYNOPSIS
 
     use Data::EventStream;
 
 =head1 DESCRIPTION
-
-B<WARNING:> this distribution is in the phase of active development, all
-interfaces are likely to change in next versions.
 
 Module provides methods to analyze stream of events.
 

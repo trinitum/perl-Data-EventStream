@@ -1,16 +1,14 @@
 Changes
 lib/Data/EventStream.pm
 lib/Data/EventStream/Aggregator.pm
-lib/Data/EventStream/Aggregator/Process.pm
-lib/Data/EventStream/Aggregator/Statistics.pm
+lib/Data/EventStream/Statistics/Continuous.pm
+lib/Data/EventStream/Statistics/Discrete.pm
 lib/Data/EventStream/Window.pm
 Makefile.PL
 MANIFEST			This list of files
 README
 README.pod
 t/00-load.t
-t/aggregator_process.t
-t/aggregator_statistics.t
 t/event_stream_count.t
 t/event_stream_mixed.t
 t/event_stream_time.t
@@ -18,6 +16,8 @@ t/lib/Averager.pm
 t/lib/MinMax.pm
 t/lib/TestStream.pm
 t/lib/TimeAverager.pm
+t/statistics_continuous.t
+t/statistics_discrete.t
 util/benchmark.pl
 xt/manifest.t
 xt/pod-coverage.t

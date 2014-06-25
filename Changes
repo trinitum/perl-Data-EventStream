@@ -1,3 +1,9 @@
+0.09 Thu Jun 26 2014 Pavel Shaydo <zwon@cpan.org>
+    - significant performance improvements
+    - get_event(0) now returns oldest event in the window
+    - iterator now iterates from oldest event to most recent
+    - renamed statistics aggregators
+
 0.08 Sun Jun 15 2014 Pavel Shaydo <zwon@cpan.org>
     - remove shift option for aggregators
     - add disposable aggregators

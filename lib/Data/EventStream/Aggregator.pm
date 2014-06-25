@@ -1,7 +1,7 @@
 package Data::EventStream::Aggregator;
 use Moose::Role;
 
-our $VERSION = "0.08";
+our $VERSION = "0.09";
 $VERSION = eval $VERSION;
 
 =head1 NAME
@@ -10,7 +10,7 @@ Data::EventStream::Window - Perl extension for event processing
 
 =head1 VERSION
 
-This document describes Data::EventStream::Window version 0.08
+This document describes Data::EventStream::Window version 0.09
 
 =head1 DESCRIPTION
 
