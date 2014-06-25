@@ -48,7 +48,7 @@ Current number of events in the window
 
 =cut
 
-sub count { shift->_count }
+sub count { shift->{_count} }
 
 =head2 $self->sum
 
@@ -56,7 +56,7 @@ Sum of all events in the window
 
 =cut
 
-sub sum { shift->_sum }
+sub sum { shift->{_sum} }
 
 =head2 $self->mean
 
@@ -66,7 +66,7 @@ Average value for the event
 
 sub mean {
     my $self = shift;
-    return $self->_count ? $self->_sum / $self->_count : undef;
+    $self->{_count} ? $self->{_sum} / $self->{_count} : undef;
 }
 
 =head2 $self->variance
@@ -77,11 +77,11 @@ Variance of the data. Division by n-1 is used
 
 sub variance {
     my $self  = shift;
-    my $count = $self->_count;
+    my $count = $self->{_count};
     return undef unless $count;
     return 0 if $count == 1;
-    my $variance = ( $self->_sq_sum - $count * $self->mean**2 ) / ( $count - 1 );
-    return $variance > 0 ? $variance : 0;
+    my $variance = ( $self->{_sq_sum} - $count * $self->mean**2 ) / ( $count - 1 );
+    $variance > 0 ? $variance : 0;
 }
 
 =head2 $self->standard_deviation
@@ -92,7 +92,7 @@ Standard deviation of the data. Division by n-1 is used
 
 sub standard_deviation {
     my $variance = shift->variance;
-    return defined $variance ? sqrt($variance) : undef;
+    defined $variance ? sqrt($variance) : undef;
 }
 
 =head1 STANDARD AGGREGATOR METHODS
@@ -105,10 +105,10 @@ Invoked when event enters window
 
 sub enter {
     my ( $self, $event, $window ) = @_;
-    my $val = $self->value_sub->($event);
-    $self->_sum( $self->_sum + $val );
-    $self->_sq_sum( $self->_sq_sum + $val * $val );
-    $self->_count( $self->_count + 1 );
+    my $val = $self->{value_sub}->($event);
+    $self->{_sum} += $val;
+    $self->{_sq_sum} += $val * $val;
+    $self->{_count}++;
 }
 
 =head2 $self->leave($event, $win)
@@ -119,10 +119,10 @@ Invoked when event leaves window
 
 sub leave {
     my ( $self, $event, $window ) = @_;
-    my $val = $self->value_sub->($event);
-    $self->_sum( $self->_sum - $val );
-    $self->_sq_sum( $self->_sq_sum - $val * $val );
-    $self->_count( $self->_count - 1 );
+    my $val = $self->{value_sub}->($event);
+    $self->{_sum} -= $val;
+    $self->{_sq_sum} -= $val * $val;
+    $self->{_count}--;
 }
 
 =head2 $self->reset($win)
@@ -133,9 +133,9 @@ Invoked when aggregator is reset
 
 sub reset {
     my ( $self, $window ) = @_;
-    $self->_sum(0);
-    $self->_sq_sum(0);
-    $self->_count(0);
+    $self->{_sum}    = 0;
+    $self->{_sq_sum} = 0;
+    $self->{_count}  = 0;
 }
 
 =head2 $self->window_update($win)
