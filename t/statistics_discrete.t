@@ -2,7 +2,7 @@ use Test::Most;
 use Test::FailWarnings;
 
 use Data::EventStream;
-use Data::EventStream::Aggregator::Statistics;
+use Data::EventStream::Statistics::Discrete;
 
 use lib 't/lib';
 use TestStream;
@@ -59,7 +59,7 @@ my @events = (
 );
 
 TestStream->new(
-    aggregator_class  => 'Data::EventStream::Aggregator::Statistics',
+    aggregator_class  => 'Data::EventStream::Statistics::Discrete',
     new_params        => { value_sub => sub { $_[0]->{val} }, },
     aggregator_params => \%params,
     events            => \@events,
