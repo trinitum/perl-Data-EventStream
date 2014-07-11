@@ -29,7 +29,7 @@ WriteMakefile(
         },
         resources => {
 
-            homepage   => 'https://github.com/trinitum/perl-Data-EventStream',
+            homepage   => 'https://trinitum.github.io/perl-Data-EventStream/',
             bugtracker => 'https://github.com/trinitum/perl-Data-EventStream/issues',
             repository => 'git://github.com/trinitum/perl-Data-EventStream',
 
