@@ -7,6 +7,6 @@ layout: default
 
 This example shows how to calculate moving average for the last N events.
 
-### Time-weighted moving average
+### [Time-weighted moving average]({{site.baseurl}}/examples/twma.html)
 
 This example takes into account time between events
