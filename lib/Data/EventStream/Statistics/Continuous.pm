@@ -1,6 +1,6 @@
 package Data::EventStream::Statistics::Continuous;
 use Moose;
-our $VERSION = "0.09";
+our $VERSION = "0.10";
 $VERSION = eval $VERSION;
 
 =head1 NAME
@@ -9,7 +9,7 @@ Data::EventStream::Statistics::Continuous - calculate basic parameters of proces
 
 =head1 VERSION
 
-This document describes Data::EventStream::Statistics::Continuous version 0.09
+This document describes Data::EventStream::Statistics::Continuous version 0.10
 
 =head1 SYNOPSIS
 
