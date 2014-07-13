@@ -64,3 +64,5 @@ my $es = Data::EventStream->new(
 
 In a similar manner, some aggregators may require you to specify `value_sub`
 that extracts some value from the event.
+
+Now lets have a look at some [examples]({{site.url}}/examples).
