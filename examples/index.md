@@ -3,7 +3,7 @@ layout: default
 ---
 ## Examples
 
-### [Moving average]({{site.url}}/examples/ma.html)
+### [Moving average]({{site.baseurl}}/examples/ma.html)
 
 This example shows how to calculate moving average for the last N events.
 
