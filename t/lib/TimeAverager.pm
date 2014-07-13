@@ -1,95 +1,66 @@
 package TimeAverager;
-use Moose;
-with 'Data::EventStream::Aggregator';
+use strict;
+use warnings;
 
-has time_value_sub => (
-    is      => 'ro',
-    default => sub {
-        sub { ( $_[0]->{time}, $_[0]->{val} ) }
-    },
-);
+sub new {
+    my ( $class, $params ) = @_;
+    $params = {%$params};
+    $params->{time_value_sub} //= sub { ( $_[0]->{time}, $_[0]->{val} ) };
+    $params->{_sum} = 0;
+    return bless $params, $class;
+}
 
-has _sum => (
-    is      => 'rw',
-    traits  => ['Number'],
-    default => 0,
-    handles => {
-        _sum_add => 'add',
-        _sum_sub => 'sub',
-    },
-);
-
-has _start_event => ( is => 'rw', );
-
-has _last_event => ( is => 'rw', );
-
-sub _duration {
-    my $self = shift;
-    return $self->_start_event ? $self->_last_event->[0] - $self->_start_event->[0] : 0;
+sub duration {
+    my ($self) = @_;
+    $self->{_start_point} ? $self->{_end_point}[0] - $self->{_start_point}[0] : 0;
 }
 
 sub value {
-    my $self = shift;
-    return
-        $self->_duration ? 0 + sprintf( "%.6g", $self->_sum / $self->_duration )
-      : $self->_start_event ? $self->_start_event->[1]
-      :                       'NaN';
+    my ($self) = @_;
+        $self->duration ? 0 + sprintf( "%.6g", $self->{_sum} / $self->duration )
+      : $self->{_start_point} ? $self->{_start_point}[1]
+      :                         'NaN';
 }
 
 sub enter {
-    my ( $self, $event, $window ) = @_;
+    my ( $self, $event, $win ) = @_;
+    my ( $time, $value ) = $self->{time_value_sub}->($event);
+    $self->{_end_point} = [ $time, $value ];
+    unless ( $self->{_start_point} ) {
 
-    my ( $time, $value ) = $self->time_value_sub->($event);
-    if ( $self->_start_event ) {
-        my $prev_last = $self->_last_event;
-        $self->_last_event( [ $time, $value ] );
-        $self->_sum_add( ( $time - $prev_last->[0] ) * $prev_last->[1] );
+        # this is the first event we've got
+        $self->{_start_point} = [ $time, $value ];
     }
-    else {
-        # this is first observed event
-        $self->_start_event( [ $time, $value ] );
-        $self->_last_event( [ $time, $value ] );
-    }
-}
-
-sub reset {
-    my ( $self, $window ) = @_;
-    my $last = $self->_last_event;
-    if ($last) {
-        my $start_time = $window->start_time;
-        $self->_start_event( [ $start_time, $last->[1] ] );
-        $self->_last_event( [ $start_time, $last->[1] ] );
-    }
-    $self->_sum(0);
 }
 
 sub leave {
-    my ( $self, $event, $window ) = @_;
-    my ( $time, $value ) = $self->time_value_sub->($event);
-    my $start_ev = $self->_start_event;
-    $self->_sum_sub( ( $time - $start_ev->[0] ) * $start_ev->[1] );
-    my $start_time = $window->start_time;
-    $self->_sum_sub( ( $start_time - $time ) * $value );
-    $self->_start_event( [ $start_time, $value ] );
-    $self->window_update($window);
+    my ( $self, $event, $win ) = @_;
+    my ( $time, $value ) = $self->{time_value_sub}->($event);
+    $self->{_start_point} = [ $win->start_time, $value ];
+}
+
+sub reset {
+    my ( $self, $win ) = @_;
+    $self->{_sum}          = 0;
+    $self->{_start_point}  = [ $win->start_time, $self->{_end_point}[1] ];
+    $self->{_end_point}[0] = $win->end_time;
 }
 
 sub window_update {
-    my ( $self, $window ) = @_;
-    my $last = $self->_last_event;
-    if ($last) {
-        $self->_last_event( [ $window->end_time, $last->[1] ] );
-        $self->_sum_add( ( $window->end_time - $last->[0] ) * $last->[1] );
+    my ( $self, $win ) = @_;
+
+    # return if we didn't receive a single event yet
+    return unless $self->{_start_point};
+    if ( $win->start_time > $self->{_start_point}[0] ) {
+        $self->{_sum} -=
+          ( $win->start_time - $self->{_start_point}[0] ) * $self->{_start_point}[1];
+        $self->{_start_point}[0] = $win->start_time;
     }
-    my $start = $self->_start_event;
-    if ( $start and $start->[0] < $window->start_time ) {
-        $self->_start_event( [ $window->start_time, $start->[1] ] );
-        $self->_sum_sub( ( $window->start_time - $start->[0] ) * $start->[1] );
+    if ( $win->end_time > $self->{_end_point}[0] ) {
+        $self->{_sum} +=
+          ( $win->end_time - $self->{_end_point}[0] ) * $self->{_end_point}[1];
+        $self->{_end_point}[0] = $win->end_time;
     }
 }
-
-no Moose;
-
-__PACKAGE__->meta->make_immutable;
 
 1;
