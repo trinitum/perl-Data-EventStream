@@ -103,21 +103,21 @@ it to our event stream.
 
 {% highlight perl %}
 my $ask_10 = MovingAverage->new(value_sub => sub { shift->{ask} });
-$es->add_aggregator($ask_10, length => 10);
+$es->add_aggregator($ask_10, count => 10);
 my $ask_20 = MovingAverage->new(value_sub => sub { shift->{ask} });
-$es->add_aggregator($ask_20, length => 20);
+$es->add_aggregator($ask_20, count => 20);
 my $bid_10 = MovingAverage->new(value_sub => sub { shift->{bid} });
-$es->add_aggregator($bid_10, length => 10);
+$es->add_aggregator($bid_10, count => 10);
 my $bid_20 = MovingAverage->new(value_sub => sub { shift->{bid} });
-$es->add_aggregator($bid_20, length => 20);
+$es->add_aggregator($bid_20, count => 20);
 {% endhighlight %}
 
 As you can see `value_sub` for ask aggregators will use `ask` element from the
 event as a value, and for bid aggregators it will use `bid` element. To attach
 aggregator to stream we are using `add_aggregator` method which accepts
 aggregator as its first argument and sliding window parameters as the following
-arguments. In this case sliding window parameters just specify the length of
-the sliding window.
+arguments. In this case sliding window parameters just specify the number of
+events that fit into sliding window.
 
 And now we can start adding events:
 
