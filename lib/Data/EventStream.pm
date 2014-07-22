@@ -157,7 +157,9 @@ sub next_leave {
 
 =head2 $self->add_aggregator($aggregator, %params)
 
-Add a new aggregator object. The following options are accepted:
+Add a new aggregator object. An aggregator that is passed as the first argument
+should implement interface described in L<Data::EventStream::Aggregator>
+documentation. Parameters that go next can be the following::
 
 =over 4
 
