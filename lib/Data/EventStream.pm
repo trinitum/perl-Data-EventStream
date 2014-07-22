@@ -17,10 +17,19 @@ This document describes Data::EventStream version 0.10
 =head1 SYNOPSIS
 
     use Data::EventStream;
+    $es = Data::EventStream->new;
+    $es->add_aggregator( $agg, %params );
+    while ( my $event = get_event() ) {
+        $es->add_event($event);
+    }
 
 =head1 DESCRIPTION
 
 Module provides methods to analyze stream of events.
+
+Please check L<Project
+Homepage|http://trinitum.github.io/perl-Data-EventStream/> for more information
+about using this module and examples.
 
 =head1 METHODS
 
@@ -345,6 +354,10 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 __END__
+
+=head1 SEE ALSO
+
+Project homepage at L<http://trinitum.github.io/perl-Data-EventStream/>
 
 =head1 BUGS
 
