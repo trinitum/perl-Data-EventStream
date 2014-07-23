@@ -1,7 +1,7 @@
 package Data::EventStream::Statistics::Discrete;
 use 5.010;
 use Moose;
-our $VERSION = "0.11";
+our $VERSION = "0.12";
 $VERSION = eval $VERSION;
 
 =head1 NAME
@@ -10,7 +10,7 @@ Data::EventStream::Statistics::Discrete - basic statistical functions for the sa
 
 =head1 VERSION
 
-This document describes Data::EventStream::Statistics::Discrete version 0.11
+This document describes Data::EventStream::Statistics::Discrete version 0.12
 
 =head1 SYNOPSIS
 
