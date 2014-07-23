@@ -137,6 +137,7 @@ sub set_time {
         }
         else {
             $win->{end_time} = $time;
+            $win->{start_time} = $time unless $win->{count};
             $obj->window_update($win);
         }
     }
@@ -264,7 +265,7 @@ sub add_event {
     for my $aggregator (@$as) {
         if ( $aggregator->{count} ) {
             my $win = $aggregator->{_window};
-            if ( $win->{count} == $aggregator->{count} ) {
+            if ( $win->{count} and $win->{count} == $aggregator->{count} ) {
 
                 if ($gt) {
                     $win->{start_time} = $gt->( $win->get_event(0) );
@@ -279,6 +280,7 @@ sub add_event {
                     else {
                         $win->{start_time} = $time;
                     }
+                    $aggregator->{_obj}->window_update($win);
                 }
                 $aggregator->{_obj}->leave( $ev_out, $win );
             }
@@ -296,19 +298,15 @@ sub add_event {
         my $win        = $aggregator->{_window};
         if ( $aggregator->{count} ) {
             my $ev_in = $win->_push_event;
-            my $event_time;
-            if ($gt) {
-                $event_time = $gt->($ev_in);
-                $win->{end_time} = $event_time;
-                $win->{start_time} = $event_time if $win->{count} == 1
-            }
             $aggregator->{_obj}->enter( $ev_in, $win );
             $aggregator->{on_enter}->( $aggregator->{_obj} ) if $aggregator->{on_enter};
             if ( $aggregator->{batch} and $win->{count} == $aggregator->{count} ) {
                 $aggregator->{on_reset}->( $aggregator->{_obj} ) if $aggregator->{on_reset};
 
                 $win->{count} = 0;
-                $win->{start_time} = $event_time if $event_time;
+                if ($gt) {
+                    $win->{start_time} = $gt->($ev_in);
+                }
                 $aggregator->{_obj}->reset($win);
                 if ( $aggregator->{disposable} ) {
                     push @deleted, $n;
