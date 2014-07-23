@@ -54,8 +54,8 @@ requires 'reset';
 
 This method is invoked when time changes and window contains new time limits.
 Note, that when window's time limits are changed this method is guaranteed to
-be invoked, subsequent I<enter>, I<leave>, and I<reset> invocations will have
-the same I<start_time>, I<end_time>, and I<time_length> as during the last
+be invoked, subsequent I<enter> and I<leave> invocations will have the same
+I<start_time>, I<end_time>, and I<time_length> as during the last
 I<window_update> invocation.
 
 =cut
