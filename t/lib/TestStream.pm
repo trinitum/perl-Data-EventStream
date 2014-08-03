@@ -21,6 +21,8 @@ has expected_length => ( is => 'ro' );
 
 has no_callbacks => ( is => 'ro', default => 0, );
 
+has filter => ( is => 'ro', );
+
 sub _store_observed_value {
     my ( $hr, $key, $value ) = @_;
     if ( defined $hr->{$key} ) {
@@ -72,6 +74,9 @@ sub run {
     };
     for my $as ( keys %{ $test->aggregator_params } ) {
         $add_aggregator->( $as, $test->aggregator_params->{$as} );
+    }
+    if ( $test->filter ) {
+        $es->add_filter( $test->filter );
     }
     if ( defined $test->expected_time_length ) {
         is $es->time_length, $test->expected_time_length, "correct time length for event stream";
