@@ -66,6 +66,11 @@ has aggregators => (
     default => sub { [] },
 );
 
+has filters => (
+    is      => 'ro',
+    default => sub { [] },
+);
+
 has time_length => ( is => 'ro', default => 0, );
 
 has length => ( is => 'ro', default => 0, );
@@ -165,6 +170,11 @@ sub next_leave {
     shift->_next_leave;
 }
 
+sub add_filter {
+    my ( $self, $filter ) = @_;
+    push @{ $self->{filters} }, $filter;
+}
+
 =head2 $self->add_aggregator($aggregator, %params)
 
 Add a new aggregator object. An aggregator that is passed as the first argument
@@ -252,6 +262,9 @@ Add new event
 
 sub add_event {
     my ( $self, $event ) = @_;
+    for ( @{ $self->{filters} } ) {
+        return unless $_->($event);
+    }
     my $ev     = $self->{events};
     my $ev_num = @$ev;
     my $as     = $self->aggregators;
