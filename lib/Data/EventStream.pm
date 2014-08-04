@@ -45,8 +45,15 @@ Initial model time, by default 0
 
 =item B<time_sub>
 
-Reference to a subroutine that returns time associated with the event passed
-to it as the only parameter.
+Reference to a subroutine that returns time associated with the event passed to
+it as the only parameter. This argument is not required if you are only going
+to use count based sliding windows.
+
+=item B<filter>
+
+Reference to a subroutine that is invoked every time new event is being added.
+The new event is passed as the only argument to this subroutine. If subroutine
+returns false event is ignored.
 
 =back
 
@@ -66,9 +73,21 @@ has aggregators => (
     default => sub { [] },
 );
 
-has filters => (
+=head2 $self->set_filter(\&sub)
+
+Set a new filter
+
+=head2 $self->remove_filter
+
+Remove filter
+
+=cut
+
+has filter => (
     is      => 'ro',
-    default => sub { [] },
+    isa     => 'CodeRef',
+    writer  => 'set_filter',
+    clearer => 'remove_filter',
 );
 
 has time_length => ( is => 'ro', default => 0, );
@@ -170,11 +189,6 @@ sub next_leave {
     shift->_next_leave;
 }
 
-sub add_filter {
-    my ( $self, $filter ) = @_;
-    push @{ $self->{filters} }, $filter;
-}
-
 =head2 $self->add_aggregator($aggregator, %params)
 
 Add a new aggregator object. An aggregator that is passed as the first argument
@@ -262,8 +276,8 @@ Add new event
 
 sub add_event {
     my ( $self, $event ) = @_;
-    for ( @{ $self->{filters} } ) {
-        return unless $_->($event);
+    if ( $self->{filter} ) {
+        return unless $self->{filter}->($event);
     }
     my $ev     = $self->{events};
     my $ev_num = @$ev;
