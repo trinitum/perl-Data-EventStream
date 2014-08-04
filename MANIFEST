@@ -10,6 +10,7 @@ README
 README.pod
 t/00-load.t
 t/event_stream_count.t
+t/event_stream_filter.t
 t/event_stream_mixed.t
 t/event_stream_time.t
 t/lib/Averager.pm

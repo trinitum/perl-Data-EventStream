@@ -1,6 +1,6 @@
 package Data::EventStream::Window;
 use 5.010;
-our $VERSION = "0.12";
+our $VERSION = "0.13";
 $VERSION = eval $VERSION;
 use Carp;
 
@@ -10,7 +10,7 @@ Data::EventStream::Window - Perl extension for event processing
 
 =head1 VERSION
 
-This document describes Data::EventStream::Window version 0.12
+This document describes Data::EventStream::Window version 0.13
 
 =head1 DESCRIPTION
 
