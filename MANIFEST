@@ -7,7 +7,6 @@ lib/Data/EventStream/Window.pm
 Makefile.PL
 MANIFEST			This list of files
 README
-README.pod
 t/00-load.t
 t/event_stream_count.t
 t/event_stream_filter.t
