@@ -61,16 +61,6 @@ Window end time
 
 sub end_time { shift->{end_time} }
 
-=head2 $self->reset_count
-
-Set number of events in window to 0
-
-=cut
-
-sub reset_count {
-    shift->{count} = 0;
-}
-
 =head2 $self->time_length
 
 Window length in time
