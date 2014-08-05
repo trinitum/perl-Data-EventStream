@@ -54,6 +54,8 @@ sub leave {
     $self->_sum_sub($val);
 }
 
+sub window_update { 1 }
+
 __PACKAGE__->meta->make_immutable;
 
 1;
