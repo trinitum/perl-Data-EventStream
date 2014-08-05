@@ -9,6 +9,10 @@ INSTALLATION
         make test
         make install
 
+DOCUMENTATION
+    For tutorial and examples on using this module go to project home page
+    at https://trinitum.github.io/perl-Data-EventStream/
+
 LICENSE AND COPYRIGHT
     Copyright (C) 2014 Pavel Shaydo
 
